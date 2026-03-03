@@ -203,15 +203,36 @@ var fps=0, fpsFrames=0, fpsTimer=0;
 let mouseCanvasPos={x:-9999,y:-9999};
 let uiNavButtons=[];
 let uiNavFocusIdx=-1;
+let uiNavScope='base';
 let uiNavLastMoveAt=0;
 let uiNavLastInputAt=0;
 let uiNavEnabled=false;
 const UI_NAV_MOVE_COOLDOWN=140;
 
 function resetUiNavFrame(){ uiNavButtons.length=0; }
+function setUiNavScope(scope='base'){ uiNavScope=scope||'base'; }
+function activeUiNavScope(){
+  if (guestProfilePrompt.active) return 'guestPrompt';
+  if (inputDialog.active) return 'inputDialog';
+  if (confirmDialog.active) return 'confirmDialog';
+  if (showOptimizeConfirm) return 'optimizeConfirm';
+  if (actionPopup.active) return 'actionPopup';
+  if (usernameChangeFlow.active) return 'usernameChange';
+  if (playerCardPopup.active) return 'playerCard';
+  return '';
+}
+function uiNavCandidates(){
+  const lock=activeUiNavScope();
+  const out=[];
+  for (let i=0;i<uiNavButtons.length;i++) {
+    const b=uiNavButtons[i];
+    if (!lock || b.scope===lock) out.push({idx:i,btn:b});
+  }
+  return out;
+}
 function addUiNavButton(x,y,w,h){
   if (!(w>0&&h>0)) return;
-  uiNavButtons.push({x,y,w,h,cx:x+w/2,cy:y+h/2});
+  uiNavButtons.push({x,y,w,h,cx:x+w/2,cy:y+h/2,scope:uiNavScope||'base'});
 }
 function hasUiNavOverlay(){
   return !!(actionPopup.active || confirmDialog.active || inputDialog.active || showOptimizeConfirm || guestProfilePrompt.active || playerCardPopup.active || usernameChangeFlow.active);
@@ -226,37 +247,40 @@ function setUiNavEnabled(v){
 function disableUiNavFromPointer(){ setUiNavEnabled(false); }
 
 function ensureUiFocus(){
-  if (!uiNavButtons.length) { uiNavFocusIdx=-1; return; }
-  if (uiNavFocusIdx>=0 && uiNavFocusIdx<uiNavButtons.length) return;
-  let best=0,bestScore=1e9;
-  for (let i=0;i<uiNavButtons.length;i++) {
-    const b=uiNavButtons[i];
+  const cands=uiNavCandidates();
+  if (!cands.length) { uiNavFocusIdx=-1; return; }
+  if (cands.some(c=>c.idx===uiNavFocusIdx)) return;
+  let best=cands[0].idx,bestScore=1e9;
+  for (const c of cands) {
+    const b=c.btn;
     const sc=b.cy*1000+b.cx;
-    if (sc<bestScore) { bestScore=sc; best=i; }
+    if (sc<bestScore) { bestScore=sc; best=c.idx; }
   }
   uiNavFocusIdx=best;
 }
 function moveUiFocus(dx,dy){
-  if (!uiNavButtons.length) return false;
+  const cands=uiNavCandidates();
+  if (!cands.length) return false;
   ensureUiFocus();
-  const cur=uiNavButtons[uiNavFocusIdx]||uiNavButtons[0];
+  const cur=(cands.find(c=>c.idx===uiNavFocusIdx)||cands[0]).btn;
   let best=-1,bestScore=1e9;
-  for (let i=0;i<uiNavButtons.length;i++) {
-    if (i===uiNavFocusIdx) continue;
-    const b=uiNavButtons[i];
+  for (const c of cands) {
+    if (c.idx===uiNavFocusIdx) continue;
+    const b=c.btn;
     const vx=b.cx-cur.cx, vy=b.cy-cur.cy;
     const primary=(dx!==0)?vx*dx:vy*dy;
     if (primary<=3) continue;
     const secondary=(dx!==0)?Math.abs(vy):Math.abs(vx);
     const score=primary*1 + secondary*2;
-    if (score<bestScore) { bestScore=score; best=i; }
+    if (score<bestScore) { bestScore=score; best=c.idx; }
   }
   if (best>=0) { uiNavFocusIdx=best; return true; }
   return false;
 }
 function activateUiFocus(){
   ensureUiFocus();
-  const b=uiNavButtons[uiNavFocusIdx];
+  const cands=uiNavCandidates();
+  const b=(cands.find(c=>c.idx===uiNavFocusIdx)||{}).btn;
   if (!b) return;
   const rect=canvas.getBoundingClientRect();
   const clientX=rect.left + (b.cx/LW)*rect.width;
@@ -266,7 +290,8 @@ function activateUiFocus(){
 function drawUiFocusHighlight(t){
   if (!uiNavEnabled || !shouldUseUiNav() || !uiNavButtons.length) return;
   ensureUiFocus();
-  const b=uiNavButtons[uiNavFocusIdx];
+  const cands=uiNavCandidates();
+  const b=(cands.find(c=>c.idx===uiNavFocusIdx)||{}).btn;
   if (!b) return;
   const pad=4;
   ctx.save();
@@ -1620,14 +1645,15 @@ function drawTransition() {
 function drawTopOverlays(t){
   drawSocialToasts();
   drawGlobalFps();
-  drawPlayerCardPopup(t);
-  drawUsernameChangeOverlay(t);
-  drawActionPopup(t);
-  drawAuthOverlay(t);
-  drawOptimizeConfirmPopup(t);
-  drawConfirmDialog();
-  drawInputDialog(t);
-  drawGuestProfilePrompt(t);
+  setUiNavScope('playerCard'); drawPlayerCardPopup(t);
+  setUiNavScope('usernameChange'); drawUsernameChangeOverlay(t);
+  setUiNavScope('actionPopup'); drawActionPopup(t);
+  setUiNavScope('base'); drawAuthOverlay(t);
+  setUiNavScope('optimizeConfirm'); drawOptimizeConfirmPopup(t);
+  setUiNavScope('confirmDialog'); drawConfirmDialog();
+  setUiNavScope('inputDialog'); drawInputDialog(t);
+  setUiNavScope('guestPrompt'); drawGuestProfilePrompt(t);
+  setUiNavScope('base');
   drawUiFocusHighlight(t);
 }
 
