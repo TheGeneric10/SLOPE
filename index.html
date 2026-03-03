@@ -1232,6 +1232,20 @@ document.addEventListener('wheel', e => {
 // Keyboard
 window.addEventListener('keydown', e => {
   markPresenceActivity('keydown');
+  if (actionPopup.active) {
+    if (!actionPopup.loading && (e.key==='Enter' || e.key===' ' || e.key==='Escape')) {
+      const cb=actionPopup.onContinue;
+      actionPopup.active=false;
+      actionPopup.onContinue=null;
+      if (typeof cb==='function' && (e.key==='Enter' || e.key===' ')) cb();
+      e.preventDefault();
+      return;
+    }
+    if (actionPopup.loading && (e.key==='Enter' || e.key===' ' || e.key==='Escape')) {
+      e.preventDefault();
+      return;
+    }
+  }
   if (inputDialog.active) {
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase()==='a') { inputDialog.selectAll=true; e.preventDefault(); return; }
     if (e.key==='Escape') { closeInputDialog(false); e.preventDefault(); return; }
