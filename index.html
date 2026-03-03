@@ -240,6 +240,19 @@ function hasUiNavOverlay(){
 function shouldUseUiNav(){
   return gs!=='LOADING' && gs!=='PLAY' && gs!=='IMPOSSIBLE_INTRO';
 }
+function nudgeUiScroll(dir){
+  const amt=30*dir;
+  if (gs==='QUESTS') { questScroll=clamp(questScroll+amt,minQuestScroll(),0); return true; }
+  if (gs==='LEADERBOARD') { leaderboardScroll=clamp(leaderboardScroll+amt,minLeaderboardScroll(),0); return true; }
+  if (gs==='PROFILE') { profileScroll=clamp(profileScroll+amt,minProfileScroll(),0); return true; }
+  if (gs==='SHOP') { shopScroll=clamp(shopScroll+amt,minShopScroll(),0); return true; }
+  if (gs==='SETTINGS') { settingsScroll=clamp(settingsScroll+amt,minSettingsScroll(),0); return true; }
+  if (gs==='OPTIONS') { optionsScroll=clamp(optionsScroll+amt,minOptionsScroll(),0); return true; }
+  if (gs==='ADMIN_MENU') { adminScroll=clamp(adminScroll+amt,minAdminScroll(),0); return true; }
+  if (gs==='ADMIN_LTM') { adminLtmScroll=clamp(adminLtmScroll+amt,minAdminLtmScroll(),0); return true; }
+  if (gs==='FRIEND_REQUESTS' || gs==='FRIENDS_LIST') { socialView.scroll=clamp(socialView.scroll+amt,minSocialScroll(),0); return true; }
+  return false;
+}
 function setUiNavEnabled(v){
   uiNavEnabled=!!v;
   if (uiNavEnabled) uiNavLastInputAt=Date.now();
@@ -324,6 +337,8 @@ function handleUiNavKey(e){
     e.preventDefault();
     return true;
   }
+  if ((k==='arrowup' || k==='w') && nudgeUiScroll(1)) { uiNavLastInputAt=Date.now(); e.preventDefault(); return true; }
+  if ((k==='arrowdown' || k==='s') && nudgeUiScroll(-1)) { uiNavLastInputAt=Date.now(); e.preventDefault(); return true; }
   return false;
 }
 function updateUiNavFromGamepad(){
@@ -336,6 +351,10 @@ function updateUiNavFromGamepad(){
     if (GP.right) moved=moveUiFocus(1,0) || moved;
     if (GP.up) moved=moveUiFocus(0,-1) || moved;
     if (GP.down) moved=moveUiFocus(0,1) || moved;
+    if (!moved) {
+      if (GP.up) moved=nudgeUiScroll(1) || moved;
+      if (GP.down) moved=nudgeUiScroll(-1) || moved;
+    }
     if (moved) { uiNavLastMoveAt=now; uiNavLastInputAt=Date.now(); }
   }
   if (GP.confirmEdge) { setUiNavEnabled(true); activateUiFocus(); uiNavLastInputAt=Date.now(); }
@@ -1220,6 +1239,26 @@ canvas.addEventListener('touchmove', e => {
       shopScroll=clamp(shopScroll+dy, minShopScroll(), 0);
     }
     shopTouchY=t.clientY;
+    return;
+  }
+  if (gs==='SETTINGS') {
+    const t=e.touches[0];
+    if (settingsTouchY!==null) {
+      const dy=t.clientY-settingsTouchY;
+      if (Math.abs(dy)>2) touchMoved=true;
+      settingsScroll=clamp(settingsScroll+dy, minSettingsScroll(), 0);
+    }
+    settingsTouchY=t.clientY;
+    return;
+  }
+  if (gs==='OPTIONS') {
+    const t=e.touches[0];
+    if (optionsTouchY!==null) {
+      const dy=t.clientY-optionsTouchY;
+      if (Math.abs(dy)>2) touchMoved=true;
+      optionsScroll=clamp(optionsScroll+dy, minOptionsScroll(), 0);
+    }
+    optionsTouchY=t.clientY;
     return;
   }
   if (gs==='FRIEND_REQUESTS' || gs==='FRIENDS_LIST') {
