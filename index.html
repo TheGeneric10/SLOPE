@@ -196,11 +196,112 @@ let shopTouchY = null;
 let joyL=false, joyR=false;
 let usingTouchJoy=false;
 const isTouchDevice=('ontouchstart' in window)||(navigator.maxTouchPoints>0);
-const GP={left:false,right:false,pauseEdge:false,lastPause:false};
+const GP={left:false,right:false,up:false,down:false,confirmEdge:false,pauseEdge:false,lastPause:false,lastConfirm:false};
 var gs='LOADING';
 var profileUploadState={active:false,mode:'idle',error:'',rawData:'',img:null,zoom:1,offX:0,offY:0,drag:false,lastX:0,lastY:0};
 var fps=0, fpsFrames=0, fpsTimer=0;
 let mouseCanvasPos={x:-9999,y:-9999};
+let uiNavButtons=[];
+let uiNavFocusIdx=-1;
+let uiNavLastMoveAt=0;
+let uiNavLastInputAt=0;
+const UI_NAV_MOVE_COOLDOWN=140;
+
+function resetUiNavFrame(){ uiNavButtons.length=0; }
+function addUiNavButton(x,y,w,h){
+  if (!(w>0&&h>0)) return;
+  uiNavButtons.push({x,y,w,h,cx:x+w/2,cy:y+h/2});
+}
+function hasUiNavOverlay(){
+  return !!(actionPopup.active || confirmDialog.active || inputDialog.active || showOptimizeConfirm || guestProfilePrompt.active || playerCardPopup.active || usernameChangeFlow.active);
+}
+function shouldUseUiNav(){
+  return gs!=='LOADING' && gs!=='PLAY' && gs!=='IMPOSSIBLE_INTRO';
+}
+function ensureUiFocus(){
+  if (!uiNavButtons.length) { uiNavFocusIdx=-1; return; }
+  if (uiNavFocusIdx>=0 && uiNavFocusIdx<uiNavButtons.length) return;
+  let best=0,bestScore=1e9;
+  for (let i=0;i<uiNavButtons.length;i++) {
+    const b=uiNavButtons[i];
+    const sc=b.cy*1000+b.cx;
+    if (sc<bestScore) { bestScore=sc; best=i; }
+  }
+  uiNavFocusIdx=best;
+}
+function moveUiFocus(dx,dy){
+  if (!uiNavButtons.length) return false;
+  ensureUiFocus();
+  const cur=uiNavButtons[uiNavFocusIdx]||uiNavButtons[0];
+  let best=-1,bestScore=1e9;
+  for (let i=0;i<uiNavButtons.length;i++) {
+    if (i===uiNavFocusIdx) continue;
+    const b=uiNavButtons[i];
+    const vx=b.cx-cur.cx, vy=b.cy-cur.cy;
+    const primary=(dx!==0)?vx*dx:vy*dy;
+    if (primary<=3) continue;
+    const secondary=(dx!==0)?Math.abs(vy):Math.abs(vx);
+    const score=primary*1 + secondary*2;
+    if (score<bestScore) { bestScore=score; best=i; }
+  }
+  if (best>=0) { uiNavFocusIdx=best; return true; }
+  return false;
+}
+function activateUiFocus(){
+  ensureUiFocus();
+  const b=uiNavButtons[uiNavFocusIdx];
+  if (!b) return;
+  const rect=canvas.getBoundingClientRect();
+  const clientX=rect.left + (b.cx/LW)*rect.width;
+  const clientY=rect.top + (b.cy/LH)*rect.height;
+  handleTap({clientX,clientY});
+}
+function drawUiFocusHighlight(t){
+  if (!shouldUseUiNav() || !uiNavButtons.length) return;
+  if ((Date.now()-uiNavLastInputAt)>2200 && !hasUiNavOverlay()) return;
+  ensureUiFocus();
+  const b=uiNavButtons[uiNavFocusIdx];
+  if (!b) return;
+  const pad=4;
+  ctx.save();
+  const col=CFG.YL;
+  const a=0.65+0.35*Math.sin(t*8);
+  ctx.globalAlpha=a;
+  ctx.strokeStyle=col; ctx.lineWidth=2.5; glow(col,12);
+  ctx.strokeRect(b.x-pad,b.y-pad,b.w+pad*2,b.h+pad*2);
+  noGlow(); setFont(7,'900',"'Share Tech Mono',monospace");
+  txt('SELECT',b.x+b.w+pad+4,b.y-2,col,'left');
+  ctx.restore();
+}
+function handleUiNavKey(e){
+  if (!shouldUseUiNav()) return false;
+  const k=e.key.toLowerCase();
+  let moved=false;
+  if (k==='arrowleft' || k==='a') moved=moveUiFocus(-1,0);
+  else if (k==='arrowright' || k==='d') moved=moveUiFocus(1,0);
+  else if (k==='arrowup' || k==='w') moved=moveUiFocus(0,-1);
+  else if (k==='arrowdown' || k==='s') moved=moveUiFocus(0,1);
+  else if (e.key==='Enter' || e.key===' ') { activateUiFocus(); uiNavLastInputAt=Date.now(); e.preventDefault(); return true; }
+  if (moved) {
+    uiNavLastInputAt=Date.now();
+    e.preventDefault();
+    return true;
+  }
+  return false;
+}
+function updateUiNavFromGamepad(){
+  if (!shouldUseUiNav()) return;
+  const now=performance.now();
+  if ((GP.left||GP.right||GP.up||GP.down) && now-uiNavLastMoveAt>UI_NAV_MOVE_COOLDOWN) {
+    let moved=false;
+    if (GP.left) moved=moveUiFocus(-1,0) || moved;
+    if (GP.right) moved=moveUiFocus(1,0) || moved;
+    if (GP.up) moved=moveUiFocus(0,-1) || moved;
+    if (GP.down) moved=moveUiFocus(0,1) || moved;
+    if (moved) { uiNavLastMoveAt=now; uiNavLastInputAt=Date.now(); }
+  }
+  if (GP.confirmEdge) { activateUiFocus(); uiNavLastInputAt=Date.now(); }
+}
 
 function getCanvasXY(e) {
   const rect = canvas.getBoundingClientRect();
@@ -1289,6 +1390,8 @@ window.addEventListener('keydown', e => {
     }
   }
 
+  if (handleUiNavKey(e)) return;
+
   const l = e.key==='ArrowLeft'  || e.key.toLowerCase()==='a';
   const r = e.key==='ArrowRight' || e.key.toLowerCase()==='d';
   if (l) K.left  = true;
@@ -1340,13 +1443,21 @@ const touchSpeedMult = () => Math.max(Math.abs(touchSwipe), (K.left||K.right) ? 
 function pollGamepad() {
   const pads=navigator.getGamepads?navigator.getGamepads():[];
   const gp=(pads&&pads[0])?pads[0]:null;
-  GP.left=false; GP.right=false; GP.pauseEdge=false;
-  if (!gp) { GP.lastPause=false; return; }
+  GP.left=false; GP.right=false; GP.up=false; GP.down=false; GP.confirmEdge=false; GP.pauseEdge=false;
+  if (!gp) { GP.lastPause=false; GP.lastConfirm=false; return; }
   const ax=(gp.axes&&gp.axes.length)?gp.axes[0]:0;
+  const ay=(gp.axes&&gp.axes.length>1)?gp.axes[1]:0;
   const dL=gp.buttons&&gp.buttons[14]&&gp.buttons[14].pressed;
   const dR=gp.buttons&&gp.buttons[15]&&gp.buttons[15].pressed;
+  const dU=gp.buttons&&gp.buttons[12]&&gp.buttons[12].pressed;
+  const dD=gp.buttons&&gp.buttons[13]&&gp.buttons[13].pressed;
   GP.left=ax<-0.35||!!dL;
   GP.right=ax>0.35||!!dR;
+  GP.up=ay<-0.35||!!dU;
+  GP.down=ay>0.35||!!dD;
+  const confirmNow=(gp.buttons&&gp.buttons[0]&&gp.buttons[0].pressed);
+  GP.confirmEdge=confirmNow&&!GP.lastConfirm;
+  GP.lastConfirm=!!confirmNow;
   const pauseNow=(gp.buttons&&gp.buttons[9]&&gp.buttons[9].pressed)||(gp.buttons&&gp.buttons[7]&&gp.buttons[7].pressed);
   GP.pauseEdge=pauseNow&&!GP.lastPause;
   GP.lastPause=!!pauseNow;
@@ -1404,6 +1515,7 @@ function clipRect(x,y,w,h) {
   ctx.clip();
 }
 function drawNeonBtn(x,y,w,h,col,label,fontSize=14,alpha=1,pulse=1) {
+  addUiNavButton(x,y,w,h);
   ctx.save(); ctx.globalAlpha=alpha*(0.7+0.3*pulse);
   glow(col,18); ctx.strokeStyle=col; ctx.lineWidth=2;
   ctx.strokeRect(x,y,w,h);
@@ -1497,6 +1609,7 @@ function drawTopOverlays(t){
   drawConfirmDialog();
   drawInputDialog(t);
   drawGuestProfilePrompt(t);
+  drawUiFocusHighlight(t);
 }
 
 function drawGlobalFps(){
@@ -7209,6 +7322,7 @@ let _loadT=0;
 const LOAD_DURATION=2.5;
 
 function loop(ts) {
+  resetUiNavFrame();
   // FPS limiting
   const fpsLimitMs=FPS_VALUES[SETTINGS.fpsLimit]>0?(1000/FPS_VALUES[SETTINGS.fpsLimit]):0;
   if (fpsLimitMs>0&&ts-lastTime<fpsLimitMs-1) {
@@ -7221,6 +7335,7 @@ function loop(ts) {
   fpsFrames++; fpsTimer+=dt;
   if (fpsTimer>=0.5) { fps=Math.round(fpsFrames/fpsTimer); fpsFrames=0; fpsTimer=0; }
 
+  pollGamepad();
   menuT+=dt;
   if (gs==='PLAY' || gs==='PAUSE') touchSwipe=lerp(touchSwipe,touchSwipeTarget,clamp(dt*14,0,1));
   else touchSwipe=lerp(touchSwipe,0,clamp(dt*10,0,1));
@@ -7230,6 +7345,7 @@ function loop(ts) {
   if (charShopMsgT>0) charShopMsgT=Math.max(0,charShopMsgT-dt);
   if (stageTransT>0) stageTransT=Math.max(0,stageTransT-dt);
   if (gameOverFlash>0) gameOverFlash=Math.max(0,gameOverFlash-dt);
+  updateUiNavFromGamepad();
 
   // Transition fade in/out
   if (transDir===1&&transAlpha>0) transAlpha=Math.max(0,transAlpha-dt*4);
