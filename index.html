@@ -205,6 +205,7 @@ let uiNavButtons=[];
 let uiNavFocusIdx=-1;
 let uiNavLastMoveAt=0;
 let uiNavLastInputAt=0;
+let uiNavEnabled=false;
 const UI_NAV_MOVE_COOLDOWN=140;
 
 function resetUiNavFrame(){ uiNavButtons.length=0; }
@@ -218,6 +219,12 @@ function hasUiNavOverlay(){
 function shouldUseUiNav(){
   return gs!=='LOADING' && gs!=='PLAY' && gs!=='IMPOSSIBLE_INTRO';
 }
+function setUiNavEnabled(v){
+  uiNavEnabled=!!v;
+  if (uiNavEnabled) uiNavLastInputAt=Date.now();
+}
+function disableUiNavFromPointer(){ setUiNavEnabled(false); }
+
 function ensureUiFocus(){
   if (!uiNavButtons.length) { uiNavFocusIdx=-1; return; }
   if (uiNavFocusIdx>=0 && uiNavFocusIdx<uiNavButtons.length) return;
@@ -257,8 +264,7 @@ function activateUiFocus(){
   handleTap({clientX,clientY});
 }
 function drawUiFocusHighlight(t){
-  if (!shouldUseUiNav() || !uiNavButtons.length) return;
-  if ((Date.now()-uiNavLastInputAt)>2200 && !hasUiNavOverlay()) return;
+  if (!uiNavEnabled || !shouldUseUiNav() || !uiNavButtons.length) return;
   ensureUiFocus();
   const b=uiNavButtons[uiNavFocusIdx];
   if (!b) return;
@@ -277,11 +283,17 @@ function handleUiNavKey(e){
   if (!shouldUseUiNav()) return false;
   const k=e.key.toLowerCase();
   let moved=false;
-  if (k==='arrowleft' || k==='a') moved=moveUiFocus(-1,0);
-  else if (k==='arrowright' || k==='d') moved=moveUiFocus(1,0);
-  else if (k==='arrowup' || k==='w') moved=moveUiFocus(0,-1);
-  else if (k==='arrowdown' || k==='s') moved=moveUiFocus(0,1);
-  else if (e.key==='Enter' || e.key===' ') { activateUiFocus(); uiNavLastInputAt=Date.now(); e.preventDefault(); return true; }
+  if (k==='arrowleft' || k==='a') { setUiNavEnabled(true); moved=moveUiFocus(-1,0); }
+  else if (k==='arrowright' || k==='d') { setUiNavEnabled(true); moved=moveUiFocus(1,0); }
+  else if (k==='arrowup' || k==='w') { setUiNavEnabled(true); moved=moveUiFocus(0,-1); }
+  else if (k==='arrowdown' || k==='s') { setUiNavEnabled(true); moved=moveUiFocus(0,1); }
+  else if (e.key==='Enter' || e.key===' ') {
+    setUiNavEnabled(true);
+    activateUiFocus();
+    uiNavLastInputAt=Date.now();
+    e.preventDefault();
+    return true;
+  }
   if (moved) {
     uiNavLastInputAt=Date.now();
     e.preventDefault();
@@ -293,6 +305,7 @@ function updateUiNavFromGamepad(){
   if (!shouldUseUiNav()) return;
   const now=performance.now();
   if ((GP.left||GP.right||GP.up||GP.down) && now-uiNavLastMoveAt>UI_NAV_MOVE_COOLDOWN) {
+    setUiNavEnabled(true);
     let moved=false;
     if (GP.left) moved=moveUiFocus(-1,0) || moved;
     if (GP.right) moved=moveUiFocus(1,0) || moved;
@@ -300,7 +313,7 @@ function updateUiNavFromGamepad(){
     if (GP.down) moved=moveUiFocus(0,1) || moved;
     if (moved) { uiNavLastMoveAt=now; uiNavLastInputAt=Date.now(); }
   }
-  if (GP.confirmEdge) { activateUiFocus(); uiNavLastInputAt=Date.now(); }
+  if (GP.confirmEdge) { setUiNavEnabled(true); activateUiFocus(); uiNavLastInputAt=Date.now(); }
 }
 
 function getCanvasXY(e) {
@@ -1100,6 +1113,7 @@ function handleTap(e) {
 
 // ── Touch: swipe left/right for movement ─────────────────────────
 canvas.addEventListener('touchstart', e => {
+  disableUiNavFromPointer();
   markPresenceActivity('touchstart');
   e.preventDefault();
   const p=getCanvasXY(e);
@@ -1128,6 +1142,7 @@ canvas.addEventListener('touchstart', e => {
 }, { passive:false });
 
 canvas.addEventListener('touchmove', e => {
+  disableUiNavFromPointer();
   e.preventDefault();
   if (usingTouchJoy) return;
   if (!touchActive) return;
@@ -1236,6 +1251,7 @@ canvas.addEventListener('touchcancel', () => {
 
 // Mouse (desktop)
 canvas.addEventListener('mousedown', e => {
+  disableUiNavFromPointer();
   markPresenceActivity('mousedown');
   if (gs==='PROFILE') {
     const p=getCanvasXY(e);
@@ -1254,6 +1270,7 @@ canvas.addEventListener('mousedown', e => {
   }
 });
 canvas.addEventListener('mousemove', e => {
+  disableUiNavFromPointer();
   markPresenceActivity('mousemove');
   const mp=getCanvasXY(e);
   mouseCanvasPos.x=mp.x; mouseCanvasPos.y=mp.y;
@@ -1276,12 +1293,14 @@ canvas.addEventListener('mouseup', () => { touchActive=false; touchSwipe=0; touc
 canvas.addEventListener('mouseleave', () => { touchActive=false; touchSwipe=0; touchSwipeTarget=0; joyL=false; joyR=false; usingTouchJoy=false; profileAvatarPressing=false; profileAvatarHoldFX=false; stopProfileCropInteraction(); });
 
 document.addEventListener('click', e => {
+  disableUiNavFromPointer();
   if (Date.now() - _lastTouchEnd < 450) return;
   handleTap(e);
 });
 
 
 document.addEventListener('wheel', e => {
+  disableUiNavFromPointer();
   if (gs==='QUESTS') {
     e.preventDefault();
     questScroll=clamp(questScroll - e.deltaY*0.6, minQuestScroll(), 0);
