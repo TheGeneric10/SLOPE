@@ -99,7 +99,8 @@ function saveOptionPrefs(){ localStorage.setItem('slope_options',JSON.stringify(
 let OPTION_PREFS=loadOptionPrefs();
 
 // BUG FIX 1: Removed duplicate VERSION constant ('0.9.1' shadowed '0.9.2')
-const VERSION = 'pre-1.0.0 (patch_03012026)';
+const VERSION = 'pre-1.0.0 (patch_03032026)';
+const SUPPORTED_VERSIONS = ['pre-1.0.0 (patch_030320266)','pre-1.0.0 (patch_03012026)','0.12.4'];
 
 // Adventure stage configs
 const ADV_STAGES = [
@@ -195,11 +196,112 @@ let shopTouchY = null;
 let joyL=false, joyR=false;
 let usingTouchJoy=false;
 const isTouchDevice=('ontouchstart' in window)||(navigator.maxTouchPoints>0);
-const GP={left:false,right:false,pauseEdge:false,lastPause:false};
+const GP={left:false,right:false,up:false,down:false,confirmEdge:false,pauseEdge:false,lastPause:false,lastConfirm:false};
 var gs='LOADING';
 var profileUploadState={active:false,mode:'idle',error:'',rawData:'',img:null,zoom:1,offX:0,offY:0,drag:false,lastX:0,lastY:0};
 var fps=0, fpsFrames=0, fpsTimer=0;
 let mouseCanvasPos={x:-9999,y:-9999};
+let uiNavButtons=[];
+let uiNavFocusIdx=-1;
+let uiNavLastMoveAt=0;
+let uiNavLastInputAt=0;
+const UI_NAV_MOVE_COOLDOWN=140;
+
+function resetUiNavFrame(){ uiNavButtons.length=0; }
+function addUiNavButton(x,y,w,h){
+  if (!(w>0&&h>0)) return;
+  uiNavButtons.push({x,y,w,h,cx:x+w/2,cy:y+h/2});
+}
+function hasUiNavOverlay(){
+  return !!(actionPopup.active || confirmDialog.active || inputDialog.active || showOptimizeConfirm || guestProfilePrompt.active || playerCardPopup.active || usernameChangeFlow.active);
+}
+function shouldUseUiNav(){
+  return gs!=='LOADING' && gs!=='PLAY' && gs!=='IMPOSSIBLE_INTRO';
+}
+function ensureUiFocus(){
+  if (!uiNavButtons.length) { uiNavFocusIdx=-1; return; }
+  if (uiNavFocusIdx>=0 && uiNavFocusIdx<uiNavButtons.length) return;
+  let best=0,bestScore=1e9;
+  for (let i=0;i<uiNavButtons.length;i++) {
+    const b=uiNavButtons[i];
+    const sc=b.cy*1000+b.cx;
+    if (sc<bestScore) { bestScore=sc; best=i; }
+  }
+  uiNavFocusIdx=best;
+}
+function moveUiFocus(dx,dy){
+  if (!uiNavButtons.length) return false;
+  ensureUiFocus();
+  const cur=uiNavButtons[uiNavFocusIdx]||uiNavButtons[0];
+  let best=-1,bestScore=1e9;
+  for (let i=0;i<uiNavButtons.length;i++) {
+    if (i===uiNavFocusIdx) continue;
+    const b=uiNavButtons[i];
+    const vx=b.cx-cur.cx, vy=b.cy-cur.cy;
+    const primary=(dx!==0)?vx*dx:vy*dy;
+    if (primary<=3) continue;
+    const secondary=(dx!==0)?Math.abs(vy):Math.abs(vx);
+    const score=primary*1 + secondary*2;
+    if (score<bestScore) { bestScore=score; best=i; }
+  }
+  if (best>=0) { uiNavFocusIdx=best; return true; }
+  return false;
+}
+function activateUiFocus(){
+  ensureUiFocus();
+  const b=uiNavButtons[uiNavFocusIdx];
+  if (!b) return;
+  const rect=canvas.getBoundingClientRect();
+  const clientX=rect.left + (b.cx/LW)*rect.width;
+  const clientY=rect.top + (b.cy/LH)*rect.height;
+  handleTap({clientX,clientY});
+}
+function drawUiFocusHighlight(t){
+  if (!shouldUseUiNav() || !uiNavButtons.length) return;
+  if ((Date.now()-uiNavLastInputAt)>2200 && !hasUiNavOverlay()) return;
+  ensureUiFocus();
+  const b=uiNavButtons[uiNavFocusIdx];
+  if (!b) return;
+  const pad=4;
+  ctx.save();
+  const col=CFG.YL;
+  const a=0.65+0.35*Math.sin(t*8);
+  ctx.globalAlpha=a;
+  ctx.strokeStyle=col; ctx.lineWidth=2.5; glow(col,12);
+  ctx.strokeRect(b.x-pad,b.y-pad,b.w+pad*2,b.h+pad*2);
+  noGlow(); setFont(7,'900',"'Share Tech Mono',monospace");
+  txt('SELECT',b.x+b.w+pad+4,b.y-2,col,'left');
+  ctx.restore();
+}
+function handleUiNavKey(e){
+  if (!shouldUseUiNav()) return false;
+  const k=e.key.toLowerCase();
+  let moved=false;
+  if (k==='arrowleft' || k==='a') moved=moveUiFocus(-1,0);
+  else if (k==='arrowright' || k==='d') moved=moveUiFocus(1,0);
+  else if (k==='arrowup' || k==='w') moved=moveUiFocus(0,-1);
+  else if (k==='arrowdown' || k==='s') moved=moveUiFocus(0,1);
+  else if (e.key==='Enter' || e.key===' ') { activateUiFocus(); uiNavLastInputAt=Date.now(); e.preventDefault(); return true; }
+  if (moved) {
+    uiNavLastInputAt=Date.now();
+    e.preventDefault();
+    return true;
+  }
+  return false;
+}
+function updateUiNavFromGamepad(){
+  if (!shouldUseUiNav()) return;
+  const now=performance.now();
+  if ((GP.left||GP.right||GP.up||GP.down) && now-uiNavLastMoveAt>UI_NAV_MOVE_COOLDOWN) {
+    let moved=false;
+    if (GP.left) moved=moveUiFocus(-1,0) || moved;
+    if (GP.right) moved=moveUiFocus(1,0) || moved;
+    if (GP.up) moved=moveUiFocus(0,-1) || moved;
+    if (GP.down) moved=moveUiFocus(0,1) || moved;
+    if (moved) { uiNavLastMoveAt=now; uiNavLastInputAt=Date.now(); }
+  }
+  if (GP.confirmEdge) { activateUiFocus(); uiNavLastInputAt=Date.now(); }
+}
 
 function getCanvasXY(e) {
   const rect = canvas.getBoundingClientRect();
@@ -816,7 +918,7 @@ function handleTap(e) {
     if (hitBtn(p, BTNS.modeAdventure)) { SFX.click(); gameMode='ADVENTURE'; doTransition('SHOP'); return; }
     if (hitBtn(p, BTNS.modeImpossible)) { SFX.click(); openConfirm('IMPOSSIBLE_START','IMPOSSIBLE MODE WARNING','One life only. No starter powerups. Are you sure?'); return; }
     if (hitBtn(p, BTNS.modeLtm)) {
-      if (!navigator.onLine) { addNotif('LTM REQUIRES INTERNET',CFG.PK); return; }
+      if (!isSignedIn || !navigator.onLine) { addNotif('LTM REQUIRES SIGN-IN + INTERNET',CFG.PK); return; }
       SFX.click();
       gameMode='LTM';
       if (isAdminUser) doTransition('ADMIN_LTM');
@@ -1231,6 +1333,20 @@ document.addEventListener('wheel', e => {
 // Keyboard
 window.addEventListener('keydown', e => {
   markPresenceActivity('keydown');
+  if (actionPopup.active) {
+    if (!actionPopup.loading && (e.key==='Enter' || e.key===' ' || e.key==='Escape')) {
+      const cb=actionPopup.onContinue;
+      actionPopup.active=false;
+      actionPopup.onContinue=null;
+      if (typeof cb==='function' && (e.key==='Enter' || e.key===' ')) cb();
+      e.preventDefault();
+      return;
+    }
+    if (actionPopup.loading && (e.key==='Enter' || e.key===' ' || e.key==='Escape')) {
+      e.preventDefault();
+      return;
+    }
+  }
   if (inputDialog.active) {
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase()==='a') { inputDialog.selectAll=true; e.preventDefault(); return; }
     if (e.key==='Escape') { closeInputDialog(false); e.preventDefault(); return; }
@@ -1273,6 +1389,8 @@ window.addEventListener('keydown', e => {
       if (e.key==='Escape') { SFX.click(); resetProfileUploadState(); e.preventDefault(); return; }
     }
   }
+
+  if (handleUiNavKey(e)) return;
 
   const l = e.key==='ArrowLeft'  || e.key.toLowerCase()==='a';
   const r = e.key==='ArrowRight' || e.key.toLowerCase()==='d';
@@ -1325,13 +1443,21 @@ const touchSpeedMult = () => Math.max(Math.abs(touchSwipe), (K.left||K.right) ? 
 function pollGamepad() {
   const pads=navigator.getGamepads?navigator.getGamepads():[];
   const gp=(pads&&pads[0])?pads[0]:null;
-  GP.left=false; GP.right=false; GP.pauseEdge=false;
-  if (!gp) { GP.lastPause=false; return; }
+  GP.left=false; GP.right=false; GP.up=false; GP.down=false; GP.confirmEdge=false; GP.pauseEdge=false;
+  if (!gp) { GP.lastPause=false; GP.lastConfirm=false; return; }
   const ax=(gp.axes&&gp.axes.length)?gp.axes[0]:0;
+  const ay=(gp.axes&&gp.axes.length>1)?gp.axes[1]:0;
   const dL=gp.buttons&&gp.buttons[14]&&gp.buttons[14].pressed;
   const dR=gp.buttons&&gp.buttons[15]&&gp.buttons[15].pressed;
+  const dU=gp.buttons&&gp.buttons[12]&&gp.buttons[12].pressed;
+  const dD=gp.buttons&&gp.buttons[13]&&gp.buttons[13].pressed;
   GP.left=ax<-0.35||!!dL;
   GP.right=ax>0.35||!!dR;
+  GP.up=ay<-0.35||!!dU;
+  GP.down=ay>0.35||!!dD;
+  const confirmNow=(gp.buttons&&gp.buttons[0]&&gp.buttons[0].pressed);
+  GP.confirmEdge=confirmNow&&!GP.lastConfirm;
+  GP.lastConfirm=!!confirmNow;
   const pauseNow=(gp.buttons&&gp.buttons[9]&&gp.buttons[9].pressed)||(gp.buttons&&gp.buttons[7]&&gp.buttons[7].pressed);
   GP.pauseEdge=pauseNow&&!GP.lastPause;
   GP.lastPause=!!pauseNow;
@@ -1389,6 +1515,7 @@ function clipRect(x,y,w,h) {
   ctx.clip();
 }
 function drawNeonBtn(x,y,w,h,col,label,fontSize=14,alpha=1,pulse=1) {
+  addUiNavButton(x,y,w,h);
   ctx.save(); ctx.globalAlpha=alpha*(0.7+0.3*pulse);
   glow(col,18); ctx.strokeStyle=col; ctx.lineWidth=2;
   ctx.strokeRect(x,y,w,h);
@@ -1482,6 +1609,7 @@ function drawTopOverlays(t){
   drawConfirmDialog();
   drawInputDialog(t);
   drawGuestProfilePrompt(t);
+  drawUiFocusHighlight(t);
 }
 
 function drawGlobalFps(){
@@ -2555,8 +2683,13 @@ function drawHUD() {
   }
 
   if (player.shield) {
-    ctx.save(); setFont(10,'700'); glow(CFG.BL,14);
-    txt('🛡 SHIELD',pdX+2,LH-pdY-38,CFG.BL,'left'); ctx.restore();
+    const shX=pdX-2, shY=LH-pdY-54, shW=112, shH=24;
+    ctx.save();
+    ctx.fillStyle='rgba(68,136,255,0.12)'; ctx.fillRect(shX,shY,shW,shH);
+    ctx.strokeStyle='rgba(68,136,255,0.9)'; ctx.lineWidth=1.5; glow(CFG.BL,10); ctx.strokeRect(shX,shY,shW,shH);
+    setFont(9,'900',"'Share Tech Mono',monospace");
+    txt('🛡 SHIELD ACTIVE',shX+8,shY+16,CFG.BL,'left');
+    ctx.restore();
   }
 
   // Touch hint
@@ -2883,23 +3016,23 @@ function drawSocialRows(t,title,sub,list,mode){
   ctx.strokeStyle='rgba(255,230,0,0.35)'; ctx.strokeRect(x,y,w,h);
   setFont(22,'900'); glow(CFG.YL,12); txt(title,LW/2,60,CFG.YL);
   setFont(9,'700',"'Share Tech Mono',monospace"); noGlow(); txt(sub,LW/2,80,'rgba(255,240,150,0.9)');
-  BTNS.socialTabFriends={x:x+8,y:y-2,w:104,h:24};
-  BTNS.socialTabFollowers={x:x+118,y:y-2,w:104,h:24};
-  if (mode==='list') BTNS.socialTabFollowing={x:x+228,y:y-2,w:104,h:24}; else BTNS.socialTabFollowing=null;
+  BTNS.socialTabFriends={x:x+8,y:y+4,w:104,h:24};
+  BTNS.socialTabFollowers={x:x+118,y:y+4,w:104,h:24};
+  if (mode==='list') BTNS.socialTabFollowing={x:x+228,y:y+4,w:104,h:24}; else BTNS.socialTabFollowing=null;
   drawNeonBtn(BTNS.socialTabFriends.x,BTNS.socialTabFriends.y,BTNS.socialTabFriends.w,BTNS.socialTabFriends.h,CFG.CY,mode==='requests'?'RECEIVED':'FRIENDS',8,1,0);
   drawNeonBtn(BTNS.socialTabFollowers.x,BTNS.socialTabFollowers.y,BTNS.socialTabFollowers.w,BTNS.socialTabFollowers.h,CFG.PU,mode==='requests'?'SENT':'FOLLOWERS',8,1,0);
   if (mode==='list') drawNeonBtn(BTNS.socialTabFollowing.x,BTNS.socialTabFollowing.y,BTNS.socialTabFollowing.w,BTNS.socialTabFollowing.h,CFG.GR,'FOLLOWING',8,1,0);
 
-  const listX=x+8,listY=y+30,listW=w-16,listH=h-38;
+  const listX=x+8,listY=y+38,listW=w-16,listH=h-46;
   socialView.viewH=listH;
-  socialView.contentH=Math.max(listH,Math.max(1,list.length)*58+8);
+  socialView.contentH=Math.max(listH,Math.max(1,list.length)*64+10);
   socialView.scroll=clamp(socialView.scroll,minSocialScroll(),0);
   ctx.save(); ctx.beginPath(); ctx.rect(listX,listY,listW,listH); ctx.clip(); ctx.translate(0,socialView.scroll);
   socialView.renderCount=Math.min(list.length,socialView.renderCount+4);
   for (let i=0;i<socialView.renderCount;i++) {
     const it=list[i]||{};
-    const ry=listY+8+i*58;
-    ctx.fillStyle=(i%2===0)?'rgba(255,255,255,0.03)':'rgba(0,0,0,0.0)'; ctx.fillRect(listX,ry-12,listW,54);
+    const ry=listY+10+i*64;
+    ctx.fillStyle=(i%2===0)?'rgba(255,255,255,0.03)':'rgba(0,0,0,0.0)'; ctx.fillRect(listX,ry-14,listW,58);
     const ax=listX+16, ay=ry+6, ar=11;
     const av=String(it.avatar||'');
     if (av) { const img=new Image(); img.src=av; ctx.save(); ctx.beginPath(); ctx.arc(ax,ay,ar,0,Math.PI*2); ctx.clip(); ctx.drawImage(img,ax-ar,ay-ar,ar*2,ar*2); ctx.restore(); }
@@ -2980,24 +3113,25 @@ function drawAboutScreen(t) {
   ctx.restore();
 
   const lines=[
-    'pre-1.0.0 PATCH PREVIEW',
+    'pre-1.0.0 (patch_03032026)',
+    '• LTM visibility now requires signed-in + online status',
+    '• Added LTM card countdown badge and matchmaking banner',
+    '• Reworked social/friends row spacing to prevent overlap',
+    '',
+    'pre-1.0.0 (patch_03012026)',
     '• Migrated Firebase mirror path to SLOPE/users',
     '• Added Google sign-in button on sign-in flow',
-    '• Added profile change-password action + profile scrolling',
-    '• Auth/sign-out now routes back to main menu',
     '• Expanded profile cloud-save details (gems, unlocks, cosmetics)',
     '',
-    'v0.12.4 HOTFIX UPDATE',
-    '• Removed duplicate RETURN BACK TO GAME auth button',
-    '• Sign-in email defaults are now blank for cleaner UX',
-    '• Input dialog now supports Ctrl/Cmd+A highlight/replace',
+    '0.12.4',
+    '• Input dialog supports Ctrl/Cmd+A highlight/replace',
     '• General bug-fix and auth flow stability improvements'
   ];
 
   let y=boxY+28;
   lines.forEach((line,i)=>{
     if (!line) { y+=10; return; }
-    const head=/^v0\./.test(line);
+    const head=/^(pre-|v0\.|0\.)/.test(line);
     setFont(head?11:9,head?'900':'700',"'Share Tech Mono',monospace");
     if (head) glow(CFG.CY,10); else noGlow();
     txt(line,boxX+14,y,head?CFG.CY:'rgba(230,255,255,0.82)','left');
@@ -3061,6 +3195,10 @@ function drawControlsScreen(t) {
 }
 
 // ── MODE SELECT ───────────────────────────────────────────────────
+function isLtmModeVisible(){
+  return !!(isSignedIn && navigator.onLine);
+}
+
 function drawModeSelect(t) {
   drawPerspGrid(terrain.scrollY,0.05); drawTerrain();
   drawBgSquares();
@@ -3071,14 +3209,18 @@ function drawModeSelect(t) {
   txt('Pick a lane • each mode has unique pacing + rewards',LW/2,82,'rgba(0,245,255,0.55)'); ctx.globalAlpha=1;
 
   const cardY=102, cardH=382, cardW=88, gap=8;
-  const startX=(LW-(cardW*4+gap*3))/2;
+  const ltmVisible=isLtmModeVisible();
+  const cardCount=ltmVisible?4:3;
+  const startX=(LW-(cardW*cardCount+gap*(cardCount-1)))/2;
 
   const cards=[
     {key:'modeEndless',x:startX,col:CFG.CY,title:'ENDLESS',sub:'CLASSIC',icon:'∞',feats:['Classic run','No cap','Score chase'],btn:'PLAY'},
     {key:'modeAdventure',x:startX+cardW+gap,col:CFG.GR,title:'ADVENTURE',sub:'STAGES',icon:'🌀',feats:['Stage flow','Ramp','Rewards'],btn:'PLAY'},
     {key:'modeImpossible',x:startX+(cardW+gap)*2,col:'#ff4455',title:'IMPOSSIBLE',sub:'ONE LIFE',icon:'☠',feats:['4 brutal','No regen','Red storm'],btn:'PLAY'},
-    {key:'modeLtm',x:startX+(cardW+gap)*3,col:'#ffd700',title:'LTM',sub:'GLOBAL LIVE',icon:'★',feats:['Global RTDB mode','Internet required','10 themed rotations'],btn:'SELECT'}
+    ...(ltmVisible?[{key:'modeLtm',x:startX+(cardW+gap)*3,col:'#ffd700',title:'LTM',sub:'GLOBAL LIVE',icon:'★',feats:['Global RTDB mode','Internet required','10 themed rotations'],btn:'SELECT'}]:[])
   ];
+
+  BTNS.modeLtm=null;
 
   cards.forEach((c,i)=>{
     const x=c.x,y=cardY;
@@ -3092,6 +3234,13 @@ function drawModeSelect(t) {
     if (i===2) {
       ctx.save(); ctx.fillStyle='#ffe600'; ctx.fillRect(x+cardW-34,y+4,30,12);
       setFont(7,'900',"'Share Tech Mono',monospace"); noGlow(); txt('NEW!',x+cardW-19,y+13,'#000'); ctx.restore();
+    }
+    if (c.key==='modeLtm') {
+      const cTxt=getDailyCountdown();
+      ctx.save();
+      ctx.fillStyle='#ffe600'; ctx.fillRect(x+cardW-74,y+8,66,14);
+      setFont(7,'900',"'Share Tech Mono',monospace"); noGlow(); txt(cTxt,x+cardW-41,y+18,'#000');
+      ctx.restore();
     }
     setFont(26,'900'); glow(c.col,14); txt(c.icon,x+cardW/2,y+100,c.col);
     setFont(8,'400',"'Share Tech Mono',monospace"); noGlow();
@@ -3109,7 +3258,7 @@ function drawModeSelect(t) {
   const dailyIdx=clamp(ltmSelectedIndex>=0?ltmSelectedIndex:getDailyLtmIndex(),0,Math.max(0,LTM_MODES.length-1));
   const themeA=daily.cardCol||'#ffd700';
   const nextCol=(LTM_MODES[(dailyIdx+1)%LTM_MODES.length]&&LTM_MODES[(dailyIdx+1)%LTM_MODES.length].cardCol)||'#ffe45a';
-  const soonW=cardW*4+gap*3, soonH=62, soonX=startX, soonY=cardY+cardH+12;
+  const soonW=cardW*cardCount+gap*(cardCount-1), soonH=62, soonX=startX, soonY=cardY+cardH+12;
   ctx.save();
   const bg=ctx.createLinearGradient(soonX,0,soonX+soonW,0);
   bg.addColorStop(0,hexToRgba(themeA,0.18));
@@ -3126,7 +3275,7 @@ function drawModeSelect(t) {
   txt(`LTM ${dailyIdx+1}/10 • ${daily.name}`,soonX+10,soonY+18,'#0d0d0d','left');
   setFont(8,'700',"'Share Tech Mono',monospace");
   txt(`${daily.desc||'Live special mode'} • ${(daily.specialName||'Mode bonus').slice(0,26)}`,soonX+10,soonY+34,'#ffffff','left');
-  const netTxt=navigator.onLine?`GLOBAL ROTATION • NEXT UPDATE IN ${getDailyCountdown()}`:'OFFLINE • LTM PLAY DISABLED';
+  const netTxt=ltmVisible?`GLOBAL ROTATION • NEXT UPDATE IN ${getDailyCountdown()}`:'SIGN IN + INTERNET REQUIRED FOR LTM';
   txt(netTxt,soonX+10,soonY+50,'#0d0d0d','left');
   ctx.restore();
 
@@ -3514,7 +3663,8 @@ function drawGameOver(t) {
 
 // ── PAUSE ─────────────────────────────────────────────────────────
 function drawPause() {
-  ctx.save(); ctx.fillStyle='#000'; ctx.fillRect(0,0,LW,LH);
+  ctx.save();
+  ctx.fillStyle='rgba(0,0,0,0.42)'; ctx.fillRect(0,0,LW,LH);
   const bannerY=LH*0.18;
   setFont(44,'900'); glow(CFG.CY,24); txt('PAUSED',LW/2,bannerY,CFG.CY);
   ctx.save(); const dw=160,dx2=(LW-dw)/2;
@@ -4635,6 +4785,8 @@ function buildSlopeUserPayload(extra={}){
     admin:String(!!(auth&&auth.admin)),
     ...extra,
   };
+  const secureSeed=`${payload.uid}|${payload.email}|${payload.updatedAt}|${payload.bestScore}|${payload.gems}|${payload.selectedSkin}|${payload.selectedAura}|${payload.selectedTheme}`;
+  payload.secureSig=String(hashStr(secureSeed));
   return payload;
 }
 
@@ -4661,9 +4813,8 @@ async function ensureSupportedVersions(){
     await fbDb.ref('SLOPE/config/currentVersion').get();
     const sv=await fbDb.ref('SLOPE/config/supportedVersions').get();
     const list=(sv&&sv.val)?(sv.val()||[]):[];
-    if (Array.isArray(list) && !list.includes(VERSION)) {
-      await fbDb.ref('SLOPE/config/supportedVersions').set([...list,VERSION].slice(-40));
-    }
+    const merged=Array.from(new Set([...(Array.isArray(list)?list:[]), ...SUPPORTED_VERSIONS]));
+    await fbDb.ref('SLOPE/config/supportedVersions').set(merged.slice(-40));
     await loadGlobalLtmConfig(true);
   } catch (e) {}
 }
@@ -6531,6 +6682,7 @@ function canAdvanceStage(){
 
 function activateImmunity(sec=immunityDuration()) {
   if (gameMode==='IMPOSSIBLE') sec=Math.min(sec,1.5);
+  if (gameMode==='LTM') sec=Math.max(10,Number(sec)||0);
   immunityActive=true;
   immunityTimer=Math.max(immunityTimer,sec);
   player.inv=true;
@@ -6739,7 +6891,6 @@ function togglePause() {
     lastTime=nowPerf;
     touchSwipe=0; touchSwipeTarget=0;
     gs='PLAY';
-    setTimeout(()=>{ try { SFX.resume(); } catch(e){} },0);
     touchSwipe=0; touchActive=false; K.left=false; K.right=false;
   }
 }
@@ -7171,6 +7322,7 @@ let _loadT=0;
 const LOAD_DURATION=2.5;
 
 function loop(ts) {
+  resetUiNavFrame();
   // FPS limiting
   const fpsLimitMs=FPS_VALUES[SETTINGS.fpsLimit]>0?(1000/FPS_VALUES[SETTINGS.fpsLimit]):0;
   if (fpsLimitMs>0&&ts-lastTime<fpsLimitMs-1) {
@@ -7183,6 +7335,7 @@ function loop(ts) {
   fpsFrames++; fpsTimer+=dt;
   if (fpsTimer>=0.5) { fps=Math.round(fpsFrames/fpsTimer); fpsFrames=0; fpsTimer=0; }
 
+  pollGamepad();
   menuT+=dt;
   if (gs==='PLAY' || gs==='PAUSE') touchSwipe=lerp(touchSwipe,touchSwipeTarget,clamp(dt*14,0,1));
   else touchSwipe=lerp(touchSwipe,0,clamp(dt*10,0,1));
@@ -7192,6 +7345,7 @@ function loop(ts) {
   if (charShopMsgT>0) charShopMsgT=Math.max(0,charShopMsgT-dt);
   if (stageTransT>0) stageTransT=Math.max(0,stageTransT-dt);
   if (gameOverFlash>0) gameOverFlash=Math.max(0,gameOverFlash-dt);
+  updateUiNavFromGamepad();
 
   // Transition fade in/out
   if (transDir===1&&transAlpha>0) transAlpha=Math.max(0,transAlpha-dt*4);
