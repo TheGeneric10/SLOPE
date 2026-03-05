@@ -99,7 +99,7 @@ function saveOptionPrefs(){ localStorage.setItem('slope_options',JSON.stringify(
 let OPTION_PREFS=loadOptionPrefs();
 
 // BUG FIX 1: Removed duplicate VERSION constant ('0.9.1' shadowed '0.9.2')
-const VERSION = 'pre-1.0.0 (patch_03032026)';
+const VERSION = 'pre-1.0.0 (patch_03052026)';
 const SUPPORTED_VERSIONS = ['pre-1.0.0 (patch_030320266)','pre-1.0.0 (patch_03012026)','0.12.4'];
 
 // Adventure stage configs
@@ -372,7 +372,7 @@ function getCanvasXY(e) {
 
 const BTNS = {
   start:null, retry:null, home:null, settings:null, back:null,
-  pause:null, resume:null, menuFromPause:null,
+  pause:null, resume:null, menuFromPause:null, pauseSkins:null, pauseQuests:null,
   shopSkip:null, shopBack:null,
   charBack:null, charPrev:null, charNext:null, charShop:null,
   modeEndless:null, modeAdventure:null, modeImpossible:null, modeLtm:null,
@@ -999,7 +999,7 @@ function handleTap(e) {
     handleSettingsTap(p); return;
   }
   if (gs === 'QUESTS') {
-    if (hitBtn(p, BTNS.questsBack)) { SFX.click(); doTransition('MENU'); return; }
+    if (hitBtn(p, BTNS.questsBack)) { SFX.click(); doTransition(questsReturnState||'MENU'); questsReturnState='MENU'; return; }
     if (hitBtn(p, BTNS.questsFilter)) { SFX.click(); questFilterOpen=!questFilterOpen; return; }
     const fOpts=[BTNS.questsFilterOpt0,BTNS.questsFilterOpt1,BTNS.questsFilterOpt2,BTNS.questsFilterOpt3];
     for (let i=0;i<fOpts.length;i++) {
@@ -1151,6 +1151,8 @@ function handleTap(e) {
     if (hitBtn(p, BTNS.menuFromPause)) { SFX.click(); openConfirm('PAUSE_GIVEUP','GIVE UP RUN?','You will end this run and go to WIPEOUT.'); return; }
     if (hitBtn(p, BTNS.leaderboardPause)) { SFX.click(); leaderboardReturnState='PAUSE'; doTransition('LEADERBOARD'); triggerLeaderboardFetch(); return; }
     if (hitBtn(p, BTNS.pauseOptions)) { SFX.click(); optionsReturnState='PAUSE'; doTransition('OPTIONS'); return; }
+    if (hitBtn(p, BTNS.pauseSkins)) { SFX.click(); doTransition('CHARSHOP'); charShopPage=0; return; }
+    if (hitBtn(p, BTNS.pauseQuests)) { SFX.click(); questsReturnState='PAUSE'; doTransition('QUESTS'); return; }
     togglePause(); return;
   }
 }
@@ -1484,7 +1486,7 @@ window.addEventListener('keydown', e => {
   if (e.key==='Escape' && gs==='SHOP')      { doTransition('MODESELECT'); }
   if (e.key==='Escape' && gs==='CHARSHOP')  { doTransition('MENU'); }
   if (e.key==='Escape' && gs==='MODESELECT'){ doTransition('MENU'); }
-  if (e.key==='Escape' && gs==='QUESTS')    { doTransition('MENU'); }
+  if (e.key==='Escape' && gs==='QUESTS')    { doTransition(questsReturnState||'MENU'); questsReturnState='MENU'; }
   if (e.key==='Escape' && gs==='ABOUT')     { doTransition('MENU'); }
   if (e.key==='Escape' && gs==='CONTROLS')  { doTransition('MENU'); }
   if (e.key==='Escape' && gs==='LEADERBOARD'){ doTransition(leaderboardReturnState==='PAUSE'?'PAUSE':'MENU'); }
@@ -2077,6 +2079,10 @@ const terrain=new Terrain();
 const PLAYER_BASE_Y=LH*0.38;
 const SIDE_BORDER_PAD_BASE=6;
 const IMMUNITY_COLLISION_COOLDOWN=3.0;
+const IMMUNITY_POLICY=Object.freeze({
+  hit:Object.freeze({ENDLESS:3.0,ADVENTURE:3.0,LTM:3.0,IMPOSSIBLE:1.5}),
+  powerup:Object.freeze({ENDLESS:10.0,ADVENTURE:10.0,LTM:10.0,IMPOSSIBLE:1.5})
+});
 
 class Player {
   constructor() { this.reset(); }
@@ -2222,6 +2228,7 @@ const PWR_TYPES={
   SLOW:         {col:CFG.GR, label:'SLOW-MO',       icon:'⏱', dur:4.5 },
   BOOST:        {col:CFG.YL, label:'SCORE ×2',      icon:'⚡', dur:10.0},
   MAGNET:       {col:CFG.PU, label:'MAGNET',         icon:'✦', dur:10.0},
+  IMMUNITY:     {col:CFG.GR, label:'IMMUNITY',       icon:'🟢', dur:10.0},
   JETPACK:      {col:CFG.OR, label:'JETPACK',        icon:'🚀', dur:5.0 },
   HEALTH_BOOST: {col:'#ff44aa',label:'HEALTH BOOST', icon:'❤', dur:30  },
   REGEN:        {col:'#ff6699',label:'REGENERATION', icon:'✚', dur:0   },
@@ -2239,6 +2246,7 @@ const PWR_WEIGHTED=[
   ...Array(4).fill('SLOW'),
   ...Array(4).fill('BOOST'),
   ...Array(4).fill('MAGNET'),
+  ...Array(3).fill('IMMUNITY'),
   ...Array(5).fill('JETPACK'),
   ...Array(3).fill('HEALTH_BOOST'),
   ...Array(3).fill('REGEN'),
@@ -2263,7 +2271,7 @@ function randPwrKey() {
     if (Math.random()<0.10) return 'SICK';
     if (Math.random()<0.12) return 'LTM_SPECIAL';
     if (forced.length) {
-      const map={X2_SCORE:'BOOST',JETPACK:'JETPACK',MINI_JETPACK:'MINI_JETPACK',SHIELD:'SHIELD',MAGNET:'MAGNET',REGEN:'REGEN',HEALTH_BOOST:'HEALTH_BOOST',IMMUNITY:'SHIELD',X2_GEMS:'X2_GEMS',X4_GEMS:'X4_GEMS',GEM_DROP:'GEM_DROP'};
+      const map={X2_SCORE:'BOOST',JETPACK:'JETPACK',MINI_JETPACK:'MINI_JETPACK',SHIELD:'SHIELD',MAGNET:'MAGNET',REGEN:'REGEN',HEALTH_BOOST:'HEALTH_BOOST',IMMUNITY:'IMMUNITY',X2_GEMS:'X2_GEMS',X4_GEMS:'X4_GEMS',GEM_DROP:'GEM_DROP'};
       const key=forced[rndI(0,forced.length-1)];
       return map[key]||'BOOST';
     }
@@ -2518,6 +2526,22 @@ function drawPlayer() {
     glow(tc,8); circle(trail[i].x,trail[i].y,CFG.PR*t2*0.65,tc);
     ctx.restore(); spark(trail[i].x,trail[i].y,tc);
   }
+  if (activePwr==='MAGNET') {
+    ctx.save();
+    ctx.globalAlpha=0.26+0.16*Math.sin(menuT*7);
+    glow(CFG.PU,22); ctx.strokeStyle=CFG.PU; ctx.lineWidth=2;
+    circle(x,y,CFG.PR+18,CFG.PU,false);
+    ctx.globalAlpha=0.28; setFont(8,'900'); noGlow(); txt('✦',x+CFG.PR+12,y+3,CFG.PU);
+    txt('✦',x-CFG.PR-12,y-2,CFG.PU);
+    ctx.restore();
+  }
+  if (player.shield) {
+    ctx.save();
+    ctx.globalAlpha=0.22+0.12*Math.sin(menuT*5);
+    glow(CFG.BL,20); ctx.strokeStyle=CFG.BL; ctx.lineWidth=2;
+    circle(x,y,CFG.PR+20,CFG.BL,false);
+    ctx.restore();
+  }
   if (jetpackActive) {
     ctx.save();
     for (let i=0;i<3;i++) {
@@ -2555,6 +2579,22 @@ function drawPlayer() {
     ctx.save(); ctx.globalAlpha=0.35+0.2*Math.sin(menuT*8);
     glow(ac,22); ctx.strokeStyle=ac; ctx.lineWidth=2;
     circle(x,y,CFG.PR+13,ac,false); ctx.restore();
+  }
+  if (activePwr==='MAGNET') {
+    ctx.save();
+    ctx.globalAlpha=0.26+0.16*Math.sin(menuT*7);
+    glow(CFG.PU,22); ctx.strokeStyle=CFG.PU; ctx.lineWidth=2;
+    circle(x,y,CFG.PR+18,CFG.PU,false);
+    ctx.globalAlpha=0.28; setFont(8,'900'); noGlow(); txt('✦',x+CFG.PR+12,y+3,CFG.PU);
+    txt('✦',x-CFG.PR-12,y-2,CFG.PU);
+    ctx.restore();
+  }
+  if (player.shield) {
+    ctx.save();
+    ctx.globalAlpha=0.22+0.12*Math.sin(menuT*5);
+    glow(CFG.BL,20); ctx.strokeStyle=CFG.BL; ctx.lineWidth=2;
+    circle(x,y,CFG.PR+20,CFG.BL,false);
+    ctx.restore();
   }
   if (jetpackActive) {
     ctx.save();
@@ -2625,9 +2665,10 @@ function drawHUD() {
     ctx.restore();
   }
 
-  ctx.save(); setFont(9,'400',"'Share Tech Mono',monospace");
-  txt('HIGHSCORE',pdX+22,pdY+8,'rgba(0,245,255,0.42)','center');
-  setFont(14,'700'); glow(CFG.CY,10); txt(`${Math.floor(bestScore)}`,pdX+22,pdY+22,CFG.CY,'center');
+  ctx.save(); setFont(8,'400',"'Share Tech Mono',monospace");
+  const hsLabel=gameMode==='ADVENTURE'?'ADV BEST':gameMode==='IMPOSSIBLE'?'IMP BEST':gameMode==='LTM'?'LTM BEST':'END BEST';
+  txt(hsLabel,pdX+22,pdY+8,'rgba(0,245,255,0.42)','center');
+  setFont(14,'700'); glow(CFG.CY,10); txt(`${Math.floor(currentModeBestScore())}`,pdX+22,pdY+22,CFG.CY,'center');
   ctx.restore();
 
   // Adventure stage indicator
@@ -3011,6 +3052,13 @@ function drawStartScreen(t) {
   let bx=LW-38-tw-8;
   if (isSignedIn && auth && auth.admin===true) { drawRoleBadgeSquare(bx,21,8,CFG.YL,t,false); bx-=12; }
   if (isSignedIn && auth && auth.verified===true) { drawRoleBadgeSquare(bx,21,8,'#33aaff',t,true); }
+  ctx.restore();
+  const notifCount=Math.max(0,Number(socialCounters.received||0)+Number(socialCounters.sent||0));
+  ctx.save();
+  const nX=LW-nameBannerW-14-82,nY=10,nW=76,nH=22;
+  ctx.fillStyle='rgba(32,120,230,0.55)'; ctx.fillRect(nX,nY,nW,nH);
+  ctx.strokeStyle='rgba(170,220,255,0.9)'; ctx.lineWidth=1; ctx.strokeRect(nX,nY,nW,nH);
+  setFont(8,'700',"'Share Tech Mono',monospace"); noGlow(); txt(`🔔 ${notifCount}`,nX+8,nY+15,'#e7f5ff','left');
   ctx.restore();
   BTNS.noAds={x:8,y:8,w:28,h:28};
   ctx.save(); ctx.fillStyle='rgba(255,30,30,0.75)'; ctx.fillRect(8,8,28,28); ctx.strokeStyle='#ff9090'; ctx.strokeRect(8,8,28,28);
@@ -3758,7 +3806,8 @@ function drawPause() {
   ctx.beginPath(); ctx.moveTo(dx2,bannerY+14); ctx.lineTo(dx2+dw,bannerY+14); ctx.stroke(); ctx.restore();
   ctx.save(); const scoreY=bannerY+28;
   setFont(9,'400',"'Share Tech Mono',monospace"); noGlow(); ctx.globalAlpha=0.5;
-  txt('SCORE',LW/2,scoreY,CFG.CY);
+  const pauseModeLbl=gameMode==='ADVENTURE'?'ADV BEST':gameMode==='IMPOSSIBLE'?'IMP BEST':gameMode==='LTM'?'LTM BEST':'END BEST';
+  txt(`SCORE • ${pauseModeLbl} ${Math.floor(currentModeBestScore())}`,LW/2,scoreY,CFG.CY);
   setFont(28,'900'); glow(CFG.YL,14); ctx.globalAlpha=1;
   txt(`${Math.floor(score)}`,LW/2,scoreY+24,CFG.YL);
   setFont(9,'700'); glow(CFG.CY,8); ctx.globalAlpha=0.75;
@@ -3785,18 +3834,40 @@ function drawPause() {
   const optY=lbY+50;
   BTNS.pauseOptions={x:bX,y:optY,w:bW,h:bH};
   drawNeonBtn(bX,optY,bW,bH,CFG.PU,'⚙ OPTIONS',13,0.9,Math.sin(menuT*2.6));
-  const mmY=optY+50;
-  BTNS.menuFromPause={x:bX,y:mmY,w:bW,h:bH};
-  drawNeonBtn(bX,mmY,bW,bH,CFG.PK,'⚑  GIVE UP',13,0.9,Math.sin(menuT*2.2));
+  const skinsY=optY+50;
+  BTNS.pauseSkins={x:bX,y:skinsY,w:bW,h:34};
+  drawNeonBtn(bX,skinsY,bW,34,CFG.YL,'🛒 SKINS',11,0.9,Math.sin(menuT*2.1));
+  const questsY=skinsY+40;
+  BTNS.pauseQuests={x:bX,y:questsY,w:bW,h:34};
+  drawNeonBtn(bX,questsY,bW,34,CFG.YL,'📋 QUESTS',11,0.9,Math.sin(menuT*1.9));
+  const mmY=questsY+40;
+  BTNS.menuFromPause={x:bX,y:mmY,w:bW,h:38};
+  drawNeonBtn(bX,mmY,bW,38,CFG.PK,'⚑  GIVE UP',12,0.9,Math.sin(menuT*2.2));
+  const notifCount=Math.max(0,Number(socialCounters.received||0)+Number(socialCounters.sent||0));
+  ctx.save();
+  const nbX=12,nbY=72,nbW=104,nbH=34;
+  ctx.fillStyle='rgba(40,130,255,0.22)'; ctx.fillRect(nbX,nbY,nbW,nbH);
+  ctx.strokeStyle='rgba(90,180,255,0.9)'; ctx.lineWidth=1.4; glow('#66bbff',8); ctx.strokeRect(nbX,nbY,nbW,nbH);
+  setFont(8,'900',"'Share Tech Mono',monospace"); noGlow();
+  txt(`🔔 ${notifCount} ALERTS`,nbX+8,nbY+13,'#cfe8ff','left');
+  txt('SOCIAL UPDATES',nbX+8,nbY+25,'#8fd2ff','left');
+  const accX=14,accY=LH-34,accW=LW-28,accH=24;
+  ctx.fillStyle='rgba(60,130,255,0.45)'; ctx.fillRect(accX,accY,accW,accH);
+  ctx.strokeStyle='rgba(170,220,255,0.9)'; ctx.lineWidth=1.1; ctx.strokeRect(accX,accY,accW,accH);
+  const accName=(isSignedIn?(auth.name||'RUNNER'):'GUEST').slice(0,14);
+  setFont(8,'700',"'Share Tech Mono',monospace");
+  txt(`👤 ${accName}   UID ${(auth.uid||'LOCAL').slice(0,10)}   ◆${totalGems}`,accX+8,accY+16,'#f2f8ff','left');
+  ctx.restore();
   ctx.save(); noGlow(); ctx.globalAlpha=0.25;
   setFont(8,'400',"'Share Tech Mono',monospace");
-  txt('ESC / TAP PAUSE TO RESUME',LW/2,mmY+bH+14,'rgba(0,245,255,0.4)'); ctx.restore();
+  txt('ESC / TAP PAUSE TO RESUME',LW/2,mmY+52,'rgba(0,245,255,0.4)'); ctx.restore();
   ctx.restore();
 }
 
 
 
 let optionsReturnState='PAUSE';
+let questsReturnState='MENU';
 let optionsScroll=0, optionsTouchY=null;
 let settingsScroll=0, settingsTouchY=null;
 let socialTouchY=null;
@@ -4381,6 +4452,9 @@ const CHAR_CATALOG=[
   {id:'legend',  name:'LEGEND',  col:'#ffe600',    trailCol:'#ff7700', unlock:'obj', objId:'score5000',objLabel:'Score 5000', icon:'●'},
   {id:'cyber',   name:'CYBER',   col:'#3cf1ff', trailCol:'#1ac8df', unlock:'buy', cost:3600, icon:'●'},
   {id:'mint',    name:'MINT',    col:'#53ffcf', trailCol:'#2acea3', unlock:'buy', cost:3700, icon:'●'},
+  {id:'onyx',    name:'ONYX',    col:'#111722', trailCol:'#2d4058', unlock:'buy', cost:3800, icon:'●'},
+  {id:'plasma',  name:'PLASMA',  col:'#b468ff', trailCol:'#7f44dd', unlock:'buy', cost:3900, icon:'●'},
+  {id:'volt',    name:'VOLT',    col:'#e4ff57', trailCol:'#b3cc33', unlock:'buy', cost:3950, icon:'●'},
 ];
 
 const AURA_CATALOG=[
@@ -4392,6 +4466,9 @@ const AURA_CATALOG=[
   {id:'mythic',name:'MYTHIC',col:'#cc88ff',unlock:'obj',objId:'survive60',objLabel:'Survive 60s',icon:'✶'},
   {id:'glacier',name:'GLACIER',col:'#9fe7ff',unlock:'buy',cost:2800,icon:'❄'},
   {id:'storm',name:'STORM',col:'#9dbeff',unlock:'buy',cost:3000,icon:'✷'},
+  {id:'halo',name:'HALO',col:'#66f5ff',unlock:'buy',cost:3200,icon:'◍'},
+  {id:'hex',name:'HEX',col:'#9cff66',unlock:'buy',cost:3250,icon:'⬡'},
+  {id:'royal',name:'ROYAL',col:'#d69bff',unlock:'buy',cost:3300,icon:'✶'},
 ];
 const THEME_CATALOG=[
   {id:'classic',name:'CLASSIC',col:'#00f5ff',unlock:'free',icon:'▦'},
@@ -4417,6 +4494,9 @@ const THEME_CATALOG=[
   {id:'frost',name:'FROST',col:'#ccf5ff',unlock:'buy',cost:3600,icon:'❄'},
   {id:'aurora',name:'AURORA',col:'#66ffd5',unlock:'buy',cost:3700,icon:'✺'},
   {id:'emberglow',name:'EMBERGLOW',col:'#ff9955',unlock:'buy',cost:3700,icon:'✷'},
+  {id:'matrix',name:'MATRIX',col:'#5fff9a',unlock:'buy',cost:3800,icon:'▣'},
+  {id:'celestial',name:'CELESTIAL',col:'#9fd6ff',unlock:'buy',cost:3900,icon:'✺'},
+  {id:'royale',name:'ROYALE',col:'#c4a0ff',unlock:'buy',cost:4000,icon:'♕'},
 ];
 
 const SHOP_PAGES=[
@@ -6275,6 +6355,12 @@ let gameMode='ENDLESS';
 let impossibleStage=0, impossibleIntroT=0, impossibleIntroDone=false;
 let score=0, bestScore=0, lives=0, maxLives=CFG.LIVES, multi=1, gemStreak=0, maxCombo=1;
 let modeScores={endless:0,adventure:0,impossible:0,ltm:0};
+function currentModeBestScore(){
+  if (gameMode==='ADVENTURE') return Number(modeScores.adventure||0);
+  if (gameMode==='IMPOSSIBLE') return Number(modeScores.impossible||0);
+  if (gameMode==='LTM') return Number(modeScores.ltm||0);
+  return Number(modeScores.endless||0);
+}
 let gemsCollected=0;
 let worldSpeedMult=1;
 let activePwr=null, pwrTimer=0;
@@ -6764,11 +6850,13 @@ function canAdvanceStage(){
   return false;
 }
 
-function activateImmunity(sec=immunityDuration()) {
-  if (gameMode==='IMPOSSIBLE') sec=Math.min(sec,1.5);
-  if (gameMode==='LTM') sec=Math.max(10,Number(sec)||0);
+function activateImmunity(sec=immunityDuration(),source='powerup') {
+  const modeKey=(gameMode==='ADVENTURE'||gameMode==='LTM'||gameMode==='IMPOSSIBLE')?gameMode:'ENDLESS';
+  const table=(source==='hit')?IMMUNITY_POLICY.hit:IMMUNITY_POLICY.powerup;
+  const policyDur=Number(table[modeKey]||IMMUNITY_COLLISION_COOLDOWN);
+  const finalDur=Math.max(0, source==='hit'?policyDur:Math.max(policyDur,Number(sec)||0));
   immunityActive=true;
-  immunityTimer=Math.max(immunityTimer,sec);
+  immunityTimer=Math.max(immunityTimer,finalDur);
   player.inv=true;
   player.blink=true;
   player.blinkT=0;
@@ -7009,7 +7097,7 @@ function loseLife() {
     const w=terrain.getWalls(player.y);
     player.x=(w.left+w.right)/2;
     addNotif(`-1 LIFE! (${lives}/${maxLives})`,CFG.PK);
-    activateImmunity(IMMUNITY_COLLISION_COOLDOWN);
+    activateImmunity(IMMUNITY_COLLISION_COOLDOWN,'hit');
   }
 }
 
@@ -7107,6 +7195,7 @@ function collectPwr(pwr) {
   else if (pwr.key==='SLOW')         { SFX.slow(); activatePwr('SLOW',4.5); worldSpeedMult=0.42; pwrCounts.SLOW++; }
   else if (pwr.key==='BOOST')        { SFX.boost(); activatePwr('BOOST',10.0); pwrCounts.BOOST++; }
   else if (pwr.key==='MAGNET')       { SFX.magnet(); activatePwr('MAGNET',10.0); pwrCounts.MAGNET++; }
+  else if (pwr.key==='IMMUNITY')     { SFX.pwr(); activateImmunity(PWR_TYPES.IMMUNITY.dur,'powerup'); pwrCounts.SHIELD++; addRing(pwr.x,pwr.y,CFG.GR,80,220,2.6); }
   else if (pwr.key==='HEALTH_BOOST') { SFX.regen(); activateHealthBoost(healthBoostDuration(30)); pwrCounts.HEALTH_BOOST++; }
   else if (pwr.key==='REGEN')        { SFX.regen(); collectRegen(pwr.x,pwr.y); pwrCounts.REGEN++; }
   else if (pwr.key==='MINI_JETPACK') { SFX.jetpack(); activateMiniJetpack(); pwrCounts.MINI_JETPACK++; }
@@ -7120,7 +7209,7 @@ function collectPwr(pwr) {
   else SFX.pwr();
   burst(pwr.x,pwr.y,col,24,220); ringBurst(pwr.x,pwr.y,col);
   addShake(6,0.2); flashAlpha=0.35; flashCol=col;
-  if (pwr.key!=='HEALTH_BOOST'&&pwr.key!=='REGEN'&&pwr.key!=='MINI_JETPACK'&&pwr.key!=='NEW_STAGE'&&pwr.key!=='X2_GEMS'&&pwr.key!=='X4_GEMS'&&pwr.key!=='SICK'&&pwr.key!=='LTM_SPECIAL'&&pwr.key!=='GEM_DROP'&&pwr.key!=='BAD_LUCK') {
+  if (pwr.key!=='HEALTH_BOOST'&&pwr.key!=='REGEN'&&pwr.key!=='MINI_JETPACK'&&pwr.key!=='NEW_STAGE'&&pwr.key!=='X2_GEMS'&&pwr.key!=='X4_GEMS'&&pwr.key!=='SICK'&&pwr.key!=='LTM_SPECIAL'&&pwr.key!=='GEM_DROP'&&pwr.key!=='BAD_LUCK'&&pwr.key!=='IMMUNITY') {
     addNotif(`${pwr.info.label} ACTIVATED!`,col);
     addFloat(pwr.x,pwr.y-16,pwr.info.icon+' '+pwr.info.label,col);
   }
