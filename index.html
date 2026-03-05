@@ -979,7 +979,7 @@ function handleTap(e) {
     if (hitBtn(p, BTNS.quests))   { SFX.click(); doTransition('QUESTS');     return; }
     if (hitBtn(p, BTNS.leaderboard)) { SFX.click(); leaderboardReturnState='MENU'; doTransition('LEADERBOARD'); triggerLeaderboardFetch(); return; }
     if (hitBtn(p, BTNS.upgrades)) { SFX.click(); doTransition('UPGRADES'); return; }
-    if (hitBtn(p, BTNS.charShop)) { SFX.click(); charShopReturnState='MENU'; charShopView='shop'; charShopCategoryPage=0; doTransition('CHARSHOP'); return; }
+    if (hitBtn(p, BTNS.charShop)) { SFX.click(); charShopReturnState='MENU'; charShopView='shop'; charShopCategoryPage=0; charShopFilterOpen=false; doTransition('CHARSHOP'); return; }
     if (hitBtn(p, BTNS.authAction)) { SFX.click(); if (isSignedIn) { playerCardPopup.active=true; playerCardPopup.isSelf=true; playerCardPopup.fromMenu=true; playerCardPopup.viewed=null; playerCardPopup.lite=false; } else guestProfilePrompt.active=true; authFlowState='idle'; authFlowTimer=0; authFlowError=''; return; }
     if (hitBtn(p, BTNS.menuProfileBox)) { SFX.click(); if (isSignedIn) { playerCardPopup.active=true; playerCardPopup.isSelf=true; playerCardPopup.fromMenu=true; playerCardPopup.viewed=null; playerCardPopup.lite=false; } else guestProfilePrompt.active=true; return; }
     if (hitBtn(p, BTNS.menuAlerts) && isSignedIn && navigator.onLine) { SFX.click(); notificationsReturnState='MENU'; doTransition('NOTIFICATIONS'); return; }
@@ -1167,7 +1167,7 @@ function handleTap(e) {
     if (hitBtn(p, BTNS.menuFromPause)) { SFX.click(); openConfirm('PAUSE_GIVEUP','GIVE UP RUN?','You will end this run and go to WIPEOUT.'); return; }
     if (hitBtn(p, BTNS.leaderboardPause)) { SFX.click(); leaderboardReturnState='PAUSE'; doTransition('LEADERBOARD'); triggerLeaderboardFetch(); return; }
     if (hitBtn(p, BTNS.pauseOptions)) { SFX.click(); optionsReturnState='PAUSE'; doTransition('OPTIONS'); return; }
-    if (hitBtn(p, BTNS.pauseSkins)) { SFX.click(); charShopReturnState='PAUSE'; charShopView='inventory'; charShopInvFilter='default'; charShopInvPage=0; doTransition('CHARSHOP'); return; }
+    if (hitBtn(p, BTNS.pauseSkins)) { SFX.click(); charShopReturnState='PAUSE'; charShopView='inventory'; charShopInvFilter='default'; charShopInvPage=0; charShopFilterOpen=false; doTransition('CHARSHOP'); return; }
     if (hitBtn(p, BTNS.pauseQuests)) { SFX.click(); questsReturnState='PAUSE'; doTransition('QUESTS'); return; }
     if (hitBtn(p, BTNS.pauseProfileBox) && isSignedIn) { SFX.click(); playerCardPopup.active=true; playerCardPopup.isSelf=true; playerCardPopup.fromMenu=false; playerCardPopup.viewed=null; playerCardPopup.lite=true; return; }
     if (hitBtn(p, BTNS.pauseAlerts) && isSignedIn && navigator.onLine) { SFX.click(); notificationsReturnState='PAUSE'; doTransition('NOTIFICATIONS'); return; }
@@ -4586,6 +4586,7 @@ let charShopCategoryPage=0;
 let charShopInvPage=0;
 let charShopView='shop';
 let charShopInvFilter='default';
+let charShopFilterOpen=false;
 const SHOP_ITEMS_PER_PAGE=6;
 const charBtnRects=[];
 let charShopMsg='', charShopMsgT=0;
@@ -4646,10 +4647,12 @@ function inventoryPoolByFilter(){
 function handleCharShopTap(p) {
   if (hitBtn(p,BTNS.charBack)) { SFX.click(); doTransition(charShopReturnState||'MENU'); charShopReturnState='MENU'; charShopView='shop'; return; }
   if (charShopView==='inventory') {
-    if (hitBtn(p,BTNS.charInvDefault)) { SFX.click(); charShopInvFilter='default'; charShopInvPage=0; return; }
-    if (hitBtn(p,BTNS.charInvSkins)) { SFX.click(); charShopInvFilter='skins'; charShopInvPage=0; return; }
-    if (hitBtn(p,BTNS.charInvAuras)) { SFX.click(); charShopInvFilter='auras'; charShopInvPage=0; return; }
-    if (hitBtn(p,BTNS.charInvThemes)) { SFX.click(); charShopInvFilter='themes'; charShopInvPage=0; return; }
+    if (hitBtn(p,BTNS.charInvFilter)) { SFX.click(); charShopFilterOpen=!charShopFilterOpen; return; }
+    const opts=[['default',BTNS.charInvOptDefault],['skins',BTNS.charInvOptSkins],['auras',BTNS.charInvOptAuras],['themes',BTNS.charInvOptThemes]];
+    for (const [k,b] of opts) {
+      if (hitBtn(p,b)) { SFX.click(); charShopInvFilter=k; charShopInvPage=0; charShopFilterOpen=false; return; }
+    }
+    if (charShopFilterOpen) { charShopFilterOpen=false; }
     const pool=inventoryPoolByFilter();
     const totalPages=Math.max(1,Math.ceil(pool.length/SHOP_ITEMS_PER_PAGE));
     if (hitBtn(p,BTNS.charPrev)) { SFX.click(); charShopInvPage=Math.max(0,charShopInvPage-1); return; }
@@ -4694,7 +4697,7 @@ function drawCharShop(t) {
     totalPages=Math.max(1,Math.ceil(list.length/SHOP_ITEMS_PER_PAGE));
     charShopInvPage=Math.min(charShopInvPage,totalPages-1);
     pageIndex=charShopInvPage;
-    pageTitle='UNLOCKED INVENTORY';
+    pageTitle=charShopInvFilter==='default'?'INVENTORY':`${charShopInvFilter.toUpperCase()} INVENTORY`; 
   } else {
     const page=SHOP_PAGES[charShopCategoryPage]||SHOP_PAGES[0];
     pageKey=page.key;
@@ -4710,16 +4713,23 @@ function drawCharShop(t) {
   ctx.beginPath(); ctx.moveTo(40,80); ctx.lineTo(LW-40,80); ctx.stroke(); ctx.restore();
 
   if (isInv) {
-    BTNS.charInvDefault={x:10,y:10,w:76,h:24};
-    BTNS.charInvSkins={x:88,y:10,w:62,h:24};
-    BTNS.charInvAuras={x:152,y:10,w:62,h:24};
-    BTNS.charInvThemes={x:216,y:10,w:72,h:24};
-    drawNeonBtn(10,10,76,24,charShopInvFilter==='default'?CFG.CY:'#4a5a67','DEFAULT',8,1,0);
-    drawNeonBtn(88,10,62,24,charShopInvFilter==='skins'?CFG.YL:'#5b5130','SKINS',8,1,0);
-    drawNeonBtn(152,10,62,24,charShopInvFilter==='auras'?CFG.GR:'#305142','AURAS',8,1,0);
-    drawNeonBtn(216,10,72,24,charShopInvFilter==='themes'?CFG.PU:'#4d325b','THEMES',8,1,0);
+    const invLabel=charShopInvFilter==='default'?'INVENTORY':(charShopInvFilter==='skins'?'SKINS':(charShopInvFilter==='auras'?'AURAS':'THEMES'));
+    BTNS.charInvFilter={x:10,y:10,w:132,h:24};
+    drawNeonBtn(10,10,132,24,CFG.CY,`${invLabel} ▾`,8,1,0);
+    BTNS.charInvOptDefault=BTNS.charInvOptSkins=BTNS.charInvOptAuras=BTNS.charInvOptThemes=null;
+    if (charShopFilterOpen) {
+      BTNS.charInvOptDefault={x:10,y:34,w:132,h:22};
+      BTNS.charInvOptSkins={x:10,y:56,w:132,h:22};
+      BTNS.charInvOptAuras={x:10,y:78,w:132,h:22};
+      BTNS.charInvOptThemes={x:10,y:100,w:132,h:22};
+      drawNeonBtn(10,34,132,22,charShopInvFilter==='default'?CFG.CY:'#4a5a67','INVENTORY',8,1,0);
+      drawNeonBtn(10,56,132,22,charShopInvFilter==='skins'?CFG.YL:'#5b5130','SKINS',8,1,0);
+      drawNeonBtn(10,78,132,22,charShopInvFilter==='auras'?CFG.GR:'#305142','AURAS',8,1,0);
+      drawNeonBtn(10,100,132,22,charShopInvFilter==='themes'?CFG.PU:'#4d325b','THEMES',8,1,0);
+    }
   } else {
-    BTNS.charInvDefault=BTNS.charInvSkins=BTNS.charInvAuras=BTNS.charInvThemes=null;
+    charShopFilterOpen=false;
+    BTNS.charInvFilter=BTNS.charInvOptDefault=BTNS.charInvOptSkins=BTNS.charInvOptAuras=BTNS.charInvOptThemes=null;
   }
 
   charBtnRects.length=0;
