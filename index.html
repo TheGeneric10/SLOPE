@@ -2746,7 +2746,7 @@ function drawHUD() {
     ctx.fillStyle=hexToRgba(CFG.CY,isPaused?0.18:0.06); ctx.fillRect(pbX,pbY,pbW,pbH);
     setFont(9,'900'); glow(pbCol,8); txt(isPaused?'▶':'❚❚',pbX+pbW/2,pbY+pbH/2+3.5,pbCol);
     ctx.restore();
-    const obX=pbX+44,obY=pbY,obW=42,obH=20;
+    const obX=pbX,obY=pbY+24,obW=42,obH=20;
     BTNS.hudOptions={x:obX,y:obY,w:obW,h:obH};
     ctx.save(); ctx.strokeStyle='rgba(204,0,255,0.6)'; ctx.lineWidth=1.3; glow(CFG.PU,6);
     ctx.strokeRect(obX,obY,obW,obH);
@@ -3094,8 +3094,6 @@ function drawStartScreen(t) {
   if (isSignedIn && auth && auth.verified===true) { drawRoleBadgeSquare(bx,21,8,'#33aaff',t,true); }
   ctx.restore();
   const lvlNow=currentLevel();
-  BTNS.menuLevelBadge={x:LW-nameBannerW-46,y:10,w:30,h:22};
-  drawLevelBadge(LW-nameBannerW-31,21,16,lvlNow,'#ffd84d');
   const showSocialUi=isSignedIn&&navigator.onLine;
   const notifCount=Math.max(0,Number(socialCounters.received||0)+Number(socialCounters.sent||0));
   BTNS.menuAlerts=null;
@@ -3111,6 +3109,10 @@ function drawStartScreen(t) {
   BTNS.noAds={x:8,y:8,w:28,h:28};
   ctx.save(); ctx.fillStyle='rgba(255,30,30,0.75)'; ctx.fillRect(8,8,28,28); ctx.strokeStyle='#ff9090'; ctx.strokeRect(8,8,28,28);
   setFont(10,'900',"'Share Tech Mono',monospace"); noGlow(); txt('⛔',22,27,'#fff'); ctx.restore();
+  BTNS.menuLevelBadge={x:8,y:40,w:28,h:28};
+  ctx.save(); ctx.fillStyle='rgba(255,216,77,0.20)'; ctx.fillRect(8,40,28,28); ctx.strokeStyle='#ffd84d'; ctx.lineWidth=1.1; glow('#ffd84d',8); ctx.strokeRect(8,40,28,28);
+  drawLevelBadge(22,54,14,lvlNow,'#ffd84d');
+  ctx.restore();
   if (!navigator.onLine) {
     setFont(14,'900'); glow(CFG.PK,12); txt('PLAYER OFFLINE',LW/2,LH/2-8,CFG.PK);
     setFont(9,'400',"'Share Tech Mono',monospace"); noGlow(); txt('Connect to internet to load leaderboard.',LW/2,LH/2+16,CFG.CY);
@@ -3863,10 +3865,13 @@ function drawLevelsScreen(t){
   const prog=levelProgress();
   setFont(10,'700',"'Share Tech Mono',monospace"); noGlow();
   txt(`LEVEL ${prog.lvl}/100 • XP ${Math.floor(prog.cur)}/${Math.floor(prog.need)}`,LW/2,70,'#dff6ff');
-  const bx=26,by=82,bw=LW-52,bh=14;
-  ctx.fillStyle='rgba(30,40,50,0.85)'; ctx.fillRect(bx,by,bw,bh);
-  ctx.fillStyle='rgba(255,216,77,0.9)'; ctx.fillRect(bx,by,bw*prog.pct,bh);
-  ctx.strokeStyle='rgba(255,216,77,0.7)'; ctx.lineWidth=1; ctx.strokeRect(bx,by,bw,bh);
+  drawLevelBadge(50,94,26,prog.lvl,'#ffd84d');
+  const bx=84,by=84,bw=LW-110,bh=20;
+  ctx.fillStyle='rgba(20,30,40,0.92)'; ctx.fillRect(bx,by,bw,bh);
+  const pgw=Math.floor(bw*prog.pct);
+  ctx.fillStyle='rgba(255,216,77,0.9)'; ctx.fillRect(bx,by,pgw,bh);
+  ctx.strokeStyle='rgba(255,216,77,0.7)'; ctx.lineWidth=1.2; ctx.strokeRect(bx,by,bw,bh);
+  for (let i=1;i<10;i++){ const gx=bx+Math.floor(i*bw/10); ctx.strokeStyle='rgba(150,170,190,0.22)'; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(gx,by); ctx.lineTo(gx,by+bh); ctx.stroke(); }
 
   const tiers=[1,5,10,15,20,25,30,35,40,45,50,60,70,80,90,100];
   const gx=26,gy=110,gw=76,gh=56,gap=8;
@@ -4883,6 +4888,9 @@ function drawCharShop(t) {
     setFont(8,'700',"'Share Tech Mono',monospace"); noGlow();
     txt(`TODAY'S SPOTLIGHT • ${shopCountdownHour()}`,16,96,'#9feeff','left');
     txt(`OTHER ITEMS • ${shopCountdownDaily()}`,LW-16,96,'#9feeff','right');
+    setFont(8,'700',"'Share Tech Mono',monospace"); noGlow();
+    txt('SPOTLIGHT ROW',16,224,'rgba(159,238,255,0.8)','left');
+    txt('OTHER ITEMS ROW',LW-16,224,'rgba(159,238,255,0.8)','right');
   }
   ctx.save(); ctx.strokeStyle='rgba(255,230,0,0.3)'; ctx.lineWidth=1;
   ctx.beginPath(); ctx.moveTo(40,80); ctx.lineTo(LW-40,80); ctx.stroke(); ctx.restore();
@@ -4908,14 +4916,16 @@ function drawCharShop(t) {
   }
 
   charBtnRects.length=0;
-  const cols=3,cW=120,cH=108,gapX=7,gapY=7;
+  const cols=3,cW=120,cH=108,gapX=7,gapY=10;
   const gridW=cols*(cW+gapX)-gapX,gridX=(LW-gridW)/2;
   const base=isInv?(pageIndex*SHOP_ITEMS_PER_PAGE):0;
+  const rowTopA=isInv?88:108;
+  const rowTopB=isInv?(rowTopA+cH+gapY):(rowTopA+cH+34);
   for (let i=0;i<SHOP_ITEMS_PER_PAGE;i++) {
     const item=list[base+i];
     if (!item) break;
     const col=i%cols,row=Math.floor(i/cols);
-    const bx=gridX+col*(cW+gapX),by=88+row*(cH+gapY);
+    const bx=gridX+col*(cW+gapX),by=(row===0?rowTopA:rowTopB);
     charBtnRects.push({x:bx,y:by,w:cW,h:cH});
 
     const kind=isInv?item._kind:pageKey;
@@ -5311,7 +5321,7 @@ async function syncLeaderboardRTDB(){
 async function ensureSupportedVersions(){
   if (!fbReady || !fbDb) return;
   try {
-    await fbDb.ref('SLOPE/config/currentVersion').get();
+    await fbDb.ref('SLOPE/config/currentVersion').set(VERSION);
     const sv=await fbDb.ref('SLOPE/config/supportedVersions').get();
     const list=(sv&&sv.val)?(sv.val()||[]):[];
     const merged=Array.from(new Set([...(Array.isArray(list)?list:[]), ...SUPPORTED_VERSIONS]));
