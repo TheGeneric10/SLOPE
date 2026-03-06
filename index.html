@@ -99,8 +99,11 @@ function saveOptionPrefs(){ localStorage.setItem('slope_options',JSON.stringify(
 let OPTION_PREFS=loadOptionPrefs();
 
 // BUG FIX 1: Removed duplicate VERSION constant ('0.9.1' shadowed '0.9.2')
-const VERSION = 'pre-1.0.0 (patch_03052026)';
-const SUPPORTED_VERSIONS = ['pre-1.0.0 (patch_030320266)','pre-1.0.0 (patch_03012026)','0.12.4'];
+const VERSION = '1.0.0';
+const SUPPORTED_VERSIONS = ['1.0.0','pre-1.0.0 (patch_03052026)'];
+const SEASON_LIVE='SEASON 1';
+const SEASON_NEXT='SEASON 2';
+const SEASON_NEXT_RELEASE='Sunday, April 5, 2026';
 
 // Adventure stage configs
 const ADV_STAGES = [
@@ -140,6 +143,7 @@ const LTM_MODES=[
   ], forcedPowerups:['X2_SCORE','JETPACK','SHIELD','MAGNET','REGEN','HEALTH_BOOST','IMMUNITY','X2_GEMS','GEM_DROP'], stagePowerupStage:2, volcanoFX:true},
   {id:'frostbite', specialName:'ICE FIELD', specialCol:'#7af0ff', name:'FROSTBITE', desc:'Frozen lanes and glide control', cardCol:'#7af0ff', stageDuration:35, stages:[{name:'STAGE 1',label:'CHILL',spd:150,spdMax:320,shrink:0.003,obsInt:[4.8,6.8]},{name:'STAGE 2',label:'COLD',spd:220,spdMax:430,shrink:0.005,obsInt:[3.4,5.2]},{name:'STAGE 3',label:'BLIZZARD',spd:320,spdMax:560,shrink:0.007,obsInt:[2.4,4.0]}], forcedPowerups:['X2_SCORE','SHIELD','MAGNET','REGEN','GEM_DROP']},
   {id:'metro', specialName:'RAIL RUSH', specialCol:'#ff4dd2', name:'NEON METRO', desc:'City rails and fast pickups', cardCol:'#ff4dd2', stageDuration:34, stages:[{name:'STAGE 1',label:'RUSH',spd:180,spdMax:340,shrink:0.004,obsInt:[4.4,6.2]},{name:'STAGE 2',label:'HYPER',spd:260,spdMax:460,shrink:0.0064,obsInt:[3.1,4.8]},{name:'STAGE 3',label:'BLAZE',spd:360,spdMax:620,shrink:0.008,obsInt:[2.0,3.5]}], forcedPowerups:['X2_SCORE','MAGNET','REGEN','X2_GEMS','GEM_DROP']},
+  {id:'slope_instant', specialName:'SLOPE INSTANT!', specialCol:'#ffb347', name:'SLOPE INSTANT!', desc:'3 stages • 20s each • rapid pace', cardCol:'#ffb347', stageDuration:20, stages:[{name:'STAGE 1',label:'RAPID',spd:240,spdMax:420,shrink:0.006,obsInt:[3.1,4.8]},{name:'STAGE 2',label:'BURST',spd:340,spdMax:560,shrink:0.008,obsInt:[2.2,3.6]},{name:'STAGE 3',label:'INSTANT!',spd:460,spdMax:760,shrink:0.011,obsInt:[1.4,2.6]}], forcedPowerups:['MINI_JETPACK','JETPACK','SHIELD','IMMUNITY','X2_GEMS']},
   {id:'storm', specialName:'THUNDER CORE', specialCol:'#d3c4ff', name:'THUNDER RUN', desc:'Electric storms and shake', cardCol:'#d3c4ff', stageDuration:38, stages:[{name:'STAGE 1',label:'STATIC',spd:170,spdMax:320,shrink:0.0035,obsInt:[4.8,6.8]},{name:'STAGE 2',label:'SPARK',spd:240,spdMax:450,shrink:0.006,obsInt:[3.0,4.8]},{name:'STAGE 3',label:'THUNDER',spd:330,spdMax:610,shrink:0.0078,obsInt:[2.1,3.3]}], forcedPowerups:['X2_SCORE','SHIELD','IMMUNITY','REGEN','GEM_DROP']},
   {id:'hacker', specialName:'GLITCH BREAK', specialCol:'#45ffcc', name:'GLITCH GRID', desc:'Digital chaos and pulse', cardCol:'#45ffcc', stageDuration:32, stages:[{name:'STAGE 1',label:'PATCHED',spd:160,spdMax:330,shrink:0.0036,obsInt:[4.7,6.5]},{name:'STAGE 2',label:'BREACH',spd:250,spdMax:470,shrink:0.0063,obsInt:[3.0,4.7]},{name:'STAGE 3',label:'MELTDOWN',spd:350,spdMax:620,shrink:0.0081,obsInt:[2.0,3.2]}], forcedPowerups:['X2_SCORE','MAGNET','X4_GEMS','REGEN','GEM_DROP']},
   {id:'void', specialName:'VOID SHELL', specialCol:'#a98bff', name:'VOID TUNNEL', desc:'Ultra dark precision route', cardCol:'#a98bff', stageDuration:42, stages:[{name:'STAGE 1',label:'DUSK',spd:170,spdMax:330,shrink:0.0041,obsInt:[4.8,6.4]},{name:'STAGE 2',label:'NIGHT',spd:260,spdMax:470,shrink:0.0066,obsInt:[2.8,4.6]},{name:'STAGE 3',label:'VOID',spd:360,spdMax:640,shrink:0.0088,obsInt:[1.8,3.0]}], forcedPowerups:['X2_SCORE','SHIELD','MAGNET','REGEN','IMMUNITY']},
@@ -391,7 +395,7 @@ const BTNS = {
   pauseOptions:null, optionsBack:null, optionsToggleQuests:null, optionsToggleTutorials:null, hudOptions:null,
   signinEmail:null, signinPass:null, signupName:null, signupEmail:null, signupPass:null, signupConfirm:null, signupSwitch:null, signinSwitch:null, signinGoogle:null, signupGoogle:null,
   profileChangeUsername:null, profileChangePassword:null, profileAvatar:null, profileTrash:null, profileUploadOk:null, profileUploadCancel:null, profileUploadZoomIn:null, profileUploadZoomOut:null, profileUploadReset:null, profileUploadErrOk:null, profileInfoBox:null, profileUidToggle:null, profileUidCopy:null, profileStatusDefault:null, profileStatusIdle:null, profileStatusDnd:null, profileStatusOffline:null, usernameTryAgain:null, usernameExit:null, usernameContinue:null, playerCardClose:null, playerCardEdit:null, playerCardFav:null, menuProfileBox:null, guestPromptSignIn:null, guestPromptContinue:null, publicProfileBack:null, publicProfileRequests:null, publicProfileFriends:null, playerCardFind:null, playerCardAdd:null, playerCardFollow:null, playerCardUnfriend:null, playerCardFriends:null, playerCardFollowers:null, playerCardFollowing:null, socialTabFriends:null, socialTabFollowers:null, socialTabFollowing:null, socialActionA:null, socialActionB:null, profileDelete:null,
-  menuAlerts:null, pauseAlerts:null, pauseProfileBox:null, notificationsBack:null,
+  menuAlerts:null, pauseAlerts:null, pauseProfileBox:null, notificationsBack:null, menuLevelBadge:null, pauseLevelBadge:null, profileLevelBadge:null, levelBack:null, levelClaim:null,
   adminBack:null, adminAuthInput:null, adminAuthSubmit:null, adminSetGems:null, adminGrantSelected:null, adminUnlockAll:null, adminLockAll:null, adminLockSelectedSkin:null, adminLockSelectedAura:null, adminLockSelectedTheme:null, adminVerifyUid:null, adminVerifyToggle:null, adminVerifyApply:null, adminViewLtm:null, adminLtmBack:null,
   controls:null, controlsBack:null, touchJoyL:null, touchJoyR:null, noAds:null, noAdsBuy:null, noAdsContinue:null, overLeaderboard:null,
 };
@@ -754,6 +758,7 @@ function drawPlayerCardPopup(t){
   setFont(8,'700',"'Share Tech Mono',monospace"); noGlow();
   const cardBest=playerCardPopup.isSelf?bestScore:Number(cardUser.bestScore||0);
   txt(`Best: ${Math.floor(cardBest||0)}`,x+14,y+122,'rgba(220,240,255,0.9)','left');
+  if (playerCardPopup.isSelf) txt(`Level: ${currentLevel()}/100`,x+116,y+122,'#ffd84d','left');
   const skinName=playerCardPopup.isSelf?String((CHAR_CATALOG.find(c=>c.id===selectedChar)||CHAR_CATALOG[0]).name):String(cardUser.selectedSkin||cardUser.skin||'Unknown');
   const auraName=playerCardPopup.isSelf?String((AURA_CATALOG.find(a=>a.id===selectedAura)||AURA_CATALOG[0]).name):String(cardUser.selectedAura||cardUser.aura||'Unknown');
   const themeName=playerCardPopup.isSelf?String((THEME_CATALOG.find(t2=>t2.id===selectedTheme)||THEME_CATALOG[0]).name):String(cardUser.selectedTheme||cardUser.theme||'Unknown');
@@ -983,6 +988,7 @@ function handleTap(e) {
     if (hitBtn(p, BTNS.authAction)) { SFX.click(); if (isSignedIn) { playerCardPopup.active=true; playerCardPopup.isSelf=true; playerCardPopup.fromMenu=true; playerCardPopup.viewed=null; playerCardPopup.lite=false; } else guestProfilePrompt.active=true; authFlowState='idle'; authFlowTimer=0; authFlowError=''; return; }
     if (hitBtn(p, BTNS.menuProfileBox)) { SFX.click(); if (isSignedIn) { playerCardPopup.active=true; playerCardPopup.isSelf=true; playerCardPopup.fromMenu=true; playerCardPopup.viewed=null; playerCardPopup.lite=false; } else guestProfilePrompt.active=true; return; }
     if (hitBtn(p, BTNS.menuAlerts) && isSignedIn && navigator.onLine) { SFX.click(); notificationsReturnState='MENU'; doTransition('NOTIFICATIONS'); return; }
+    if (hitBtn(p, BTNS.menuLevelBadge)) { SFX.click(); levelsReturnState='MENU'; doTransition('LEVELS'); return; }
     return;
   }
   if (gs === 'MODESELECT') {
@@ -997,6 +1003,7 @@ function handleTap(e) {
       else doTransition('SHOP');
       return;
     }
+    if (hitBtn(p, BTNS.modeNeonRush)) { SFX.click(); gameMode='NEON_RUSH'; doTransition('SHOP'); return; }
     if (hitBtn(p, BTNS.back)) { SFX.click(); doTransition('MENU'); return; }
     return;
   }
@@ -1039,6 +1046,11 @@ function handleTap(e) {
   }
   if (gs === 'NOTIFICATIONS') {
     if (hitBtn(p,BTNS.notificationsBack)) { SFX.click(); doTransition(notificationsReturnState||'MENU'); notificationsReturnState='MENU'; return; }
+    return;
+  }
+  if (gs === 'LEVELS') {
+    if (hitBtn(p,BTNS.levelBack)) { SFX.click(); doTransition(levelsReturnState||'MENU'); levelsReturnState='MENU'; return; }
+    if (hitBtn(p,BTNS.levelClaim)) { SFX.click(); rewardLevel(currentLevel()); return; }
     return;
   }
   if (gs === 'ABOUT') {
@@ -1171,6 +1183,7 @@ function handleTap(e) {
     if (hitBtn(p, BTNS.pauseQuests)) { SFX.click(); questsReturnState='PAUSE'; doTransition('QUESTS'); return; }
     if (hitBtn(p, BTNS.pauseProfileBox) && isSignedIn) { SFX.click(); playerCardPopup.active=true; playerCardPopup.isSelf=true; playerCardPopup.fromMenu=false; playerCardPopup.viewed=null; playerCardPopup.lite=true; return; }
     if (hitBtn(p, BTNS.pauseAlerts) && isSignedIn && navigator.onLine) { SFX.click(); notificationsReturnState='PAUSE'; doTransition('NOTIFICATIONS'); return; }
+    if (hitBtn(p, BTNS.pauseLevelBadge)) { SFX.click(); levelsReturnState='PAUSE'; doTransition('LEVELS'); return; }
     togglePause(); return;
   }
 }
@@ -1509,6 +1522,7 @@ window.addEventListener('keydown', e => {
   if (e.key==='Escape' && gs==='CONTROLS')  { doTransition('MENU'); }
   if (e.key==='Escape' && gs==='LEADERBOARD'){ doTransition(leaderboardReturnState==='PAUSE'?'PAUSE':'MENU'); }
   if (e.key==='Escape' && gs==='NOTIFICATIONS') { doTransition(notificationsReturnState||'MENU'); notificationsReturnState='MENU'; }
+  if (e.key==='Escape' && gs==='LEVELS') { doTransition(levelsReturnState||'MENU'); levelsReturnState='MENU'; }
   if (e.key==='Escape' && gs==='CONTINUE')  { openConfirm('CONTINUE_GIVEUP','GIVE UP RUN?','You will lose this run progress.'); }
   if (e.key==='Escape' && gs==='UPGRADES')  { doTransition('MENU'); }
   if (e.key==='Escape' && gs==='SIGNIN')    { doTransition('MENU'); }
@@ -2985,9 +2999,9 @@ function drawStartScreen(t) {
   setFont(60,'900'); glow(CFG.CY,30);
   ctx.fillStyle=CFG.CY; ctx.textAlign='center'; ctx.fillText('SLOPE',LW/2,titleY);
   setFont(13,'900'); glow(CFG.CY,10);
-  txt('SEASON 1',LW/2+seasonScrollX,titleY+34,'rgba(0,245,255,0.8)');
+  txt(SEASON_LIVE,LW/2+seasonScrollX,titleY+34,'rgba(0,245,255,0.8)');
   setFont(11,'400',"'Share Tech Mono',monospace"); glow(CFG.CY,8);
-  txt('NEON RUSH',LW/2,titleY+50,'rgba(0,245,255,0.7)');
+  txt(`${SEASON_NEXT} • ${SEASON_NEXT_RELEASE}`,LW/2,titleY+50,'rgba(0,245,255,0.7)');
   txt(`VERSION ${VERSION}`,LW/2,titleY+64,'rgba(0,245,255,0.35)');
 
   // Divider
@@ -3079,6 +3093,9 @@ function drawStartScreen(t) {
   if (isSignedIn && auth && auth.admin===true) { drawRoleBadgeSquare(bx,21,8,CFG.YL,t,false); bx-=12; }
   if (isSignedIn && auth && auth.verified===true) { drawRoleBadgeSquare(bx,21,8,'#33aaff',t,true); }
   ctx.restore();
+  const lvlNow=currentLevel();
+  BTNS.menuLevelBadge={x:LW-nameBannerW-46,y:10,w:30,h:22};
+  drawLevelBadge(LW-nameBannerW-31,21,16,lvlNow,'#ffd84d');
   const showSocialUi=isSignedIn&&navigator.onLine;
   const notifCount=Math.max(0,Number(socialCounters.received||0)+Number(socialCounters.sent||0));
   BTNS.menuAlerts=null;
@@ -3267,7 +3284,7 @@ function drawAboutScreen(t) {
 
   setFont(34,'900'); glow(CFG.GR,22); txt('ABOUT',LW/2,58,CFG.GR);
   setFont(10,'400',"'Share Tech Mono',monospace"); noGlow();
-  txt(`SLOPE v${VERSION} — pre-release patch stream`,LW/2,79,'rgba(57,255,20,0.65)');
+  txt(`SLOPE v${VERSION} — Official ${SEASON_LIVE} Release`,LW/2,79,'rgba(57,255,20,0.65)');
 
   const boxX=24, boxY=108, boxW=LW-48, boxH=488;
   ctx.save();
@@ -3276,19 +3293,19 @@ function drawAboutScreen(t) {
   ctx.restore();
 
   const lines=[
-    'pre-1.0.0 (patch_03032026)',
-    '• LTM visibility now requires signed-in + online status',
-    '• Added LTM card countdown badge and matchmaking banner',
-    '• Reworked social/friends row spacing to prevent overlap',
+    'SLOPE is a neon-styled arcade survival runner built around reflexes,',
+    'score chaining, progression, unlockable cosmetics, and replay-driven',
+    'challenge systems. Players dodge hazards, earn gems, complete quests,',
+    'level up, purchase upgrades, and unlock skins, auras, and themes across',
+    'multiple game modes.',
     '',
-    'pre-1.0.0 (patch_03012026)',
-    '• Migrated Firebase mirror path to SLOPE/users',
-    '• Added Google sign-in button on sign-in flow',
-    '• Expanded profile cloud-save details (gems, unlocks, cosmetics)',
+    'Version 1.0.0 marks the official release of Season 1.',
+    `Season 2 officially releases on ${SEASON_NEXT_RELEASE}.`,
+    'Season 2 expands the game with a full Level System, additional quests,',
+    'a completely revamped Shop, daily rotating content, new gameplay modes,',
+    'progression upgrades, and broader seasonal rewards.',
     '',
-    '0.12.4',
-    '• Input dialog supports Ctrl/Cmd+A highlight/replace',
-    '• General bug-fix and auth flow stability improvements'
+    `Supported versions: ${SUPPORTED_VERSIONS.join(' and ')}.`
   ];
 
   let y=boxY+28;
@@ -3383,7 +3400,7 @@ function drawModeSelect(t) {
     ...(ltmVisible?[{key:'modeLtm',x:startX+(cardW+gap)*3,col:'#ffd700',title:'LTM',sub:'GLOBAL LIVE',icon:'★',feats:['Global RTDB mode','Internet required','10 themed rotations'],btn:'SELECT'}]:[])
   ];
 
-  BTNS.modeLtm=null;
+  BTNS.modeLtm=null; BTNS.modeNeonRush=null;
 
   cards.forEach((c,i)=>{
     const x=c.x,y=cardY;
@@ -3440,6 +3457,18 @@ function drawModeSelect(t) {
   txt(`${daily.desc||'Live special mode'} • ${(daily.specialName||'Mode bonus').slice(0,26)}`,soonX+10,soonY+34,'#ffffff','left');
   const netTxt=ltmVisible?`GLOBAL ROTATION • NEXT UPDATE IN ${getDailyCountdown()}`:'SIGN IN + INTERNET REQUIRED FOR LTM';
   txt(netTxt,soonX+10,soonY+50,'#0d0d0d','left');
+  ctx.restore();
+
+
+  const nrY=soonY+soonH+10;
+  const nrW=soonW;
+  const nrH=32;
+  ctx.save();
+  ctx.fillStyle='rgba(0,245,255,0.12)'; ctx.fillRect(soonX,nrY,nrW,nrH);
+  ctx.strokeStyle='rgba(0,245,255,0.8)'; ctx.lineWidth=1.5; ctx.strokeRect(soonX,nrY,nrW,nrH);
+  setFont(9,'900',"'Share Tech Mono',monospace"); glow(CFG.CY,8); txt('NEON RUSH! (NEW!)',soonX+12,nrY+20,CFG.CY,'left');
+  BTNS.modeNeonRush={x:soonX+nrW-96,y:nrY+3,w:90,h:26};
+  drawNeonBtn(BTNS.modeNeonRush.x,BTNS.modeNeonRush.y,90,26,CFG.YL,'PLAY',10,1,Math.sin(t*3));
   ctx.restore();
 
   const bW=130,bH=34,bX=(LW-bW)/2,bY=LH-46;
@@ -3825,6 +3854,41 @@ function drawGameOver(t) {
 }
 
 
+
+function drawLevelsScreen(t){
+  ctx.save();
+  ctx.fillStyle='#000'; ctx.fillRect(0,0,LW,LH);
+  drawPerspGrid(0,0.05); drawBgSquares();
+  setFont(30,'900'); glow('#ffd84d',16); txt('LEVEL TIERS',LW/2,50,'#ffd84d');
+  const prog=levelProgress();
+  setFont(10,'700',"'Share Tech Mono',monospace"); noGlow();
+  txt(`LEVEL ${prog.lvl}/100 • XP ${Math.floor(prog.cur)}/${Math.floor(prog.need)}`,LW/2,70,'#dff6ff');
+  const bx=26,by=82,bw=LW-52,bh=14;
+  ctx.fillStyle='rgba(30,40,50,0.85)'; ctx.fillRect(bx,by,bw,bh);
+  ctx.fillStyle='rgba(255,216,77,0.9)'; ctx.fillRect(bx,by,bw*prog.pct,bh);
+  ctx.strokeStyle='rgba(255,216,77,0.7)'; ctx.lineWidth=1; ctx.strokeRect(bx,by,bw,bh);
+
+  const tiers=[1,5,10,15,20,25,30,35,40,45,50,60,70,80,90,100];
+  const gx=26,gy=110,gw=76,gh=56,gap=8;
+  tiers.forEach((lv,i)=>{
+    const col=i%4,row=Math.floor(i/4);
+    const x=gx+col*(gw+gap), y=gy+row*(gh+gap);
+    const unlocked=currentLevel()>=lv;
+    const claimed=claimedLevelRewards.includes(lv);
+    ctx.fillStyle=claimed?'rgba(57,255,20,0.16)':(unlocked?'rgba(255,216,77,0.14)':'rgba(60,70,80,0.20)');
+    ctx.fillRect(x,y,gw,gh);
+    ctx.strokeStyle=claimed?'#39ff14':(unlocked?'#ffd84d':'#4a5a66'); ctx.lineWidth=1.5; ctx.strokeRect(x,y,gw,gh);
+    setFont(12,'900'); glow(unlocked?'#ffd84d':'#4a5a66',8); txt(`LV ${lv}`,x+gw/2,y+20,unlocked?'#ffd84d':'#7f8f9b');
+    setFont(8,'700',"'Share Tech Mono',monospace"); noGlow();
+    txt(claimed?'CLAIMED':(unlocked?'UNLOCKED':'LOCKED'),x+gw/2,y+38,claimed?'#39ff14':'#b7d9ea');
+  });
+  BTNS.levelClaim={x:26,y:LH-84,w:144,h:30};
+  drawNeonBtn(BTNS.levelClaim.x,BTNS.levelClaim.y,BTNS.levelClaim.w,BTNS.levelClaim.h,'#ffd84d',`CLAIM LV ${currentLevel()}`,9,1,Math.sin(t*2));
+  BTNS.levelBack={x:LW-170,y:LH-84,w:144,h:30};
+  drawNeonBtn(BTNS.levelBack.x,BTNS.levelBack.y,BTNS.levelBack.w,BTNS.levelBack.h,CFG.PK,'← BACK',10,1,Math.sin(t*2));
+  ctx.restore();
+}
+
 function drawNotificationsScreen(t){
   ctx.save();
   ctx.fillStyle='#000'; ctx.fillRect(0,0,LW,LH);
@@ -3918,11 +3982,13 @@ function drawPause() {
   }
   const accX=14,accY=LH-34,accW=LW-28,accH=24;
   BTNS.pauseProfileBox={x:accX,y:accY,w:accW,h:accH};
+  BTNS.pauseLevelBadge={x:accX+accW-28,y:accY+2,w:20,h:20};
   ctx.fillStyle='rgba(60,130,255,0.45)'; ctx.fillRect(accX,accY,accW,accH);
   ctx.strokeStyle='rgba(170,220,255,0.9)'; ctx.lineWidth=1.1; ctx.strokeRect(accX,accY,accW,accH);
   const accName=(isSignedIn?(auth.name||'RUNNER'):'GUEST').slice(0,14);
   setFont(8,'700',"'Share Tech Mono',monospace");
   txt(`👤 ${accName}   UID ${(auth.uid||'LOCAL').slice(0,10)}   ◆${totalGems}`,accX+8,accY+16,'#f2f8ff','left');
+  drawLevelBadge(accX+accW-16,accY+12,14,currentLevel(),'#ffd84d');
   ctx.restore();
   ctx.save(); noGlow(); ctx.globalAlpha=0.25;
   setFont(8,'400',"'Share Tech Mono',monospace");
@@ -3936,6 +4002,7 @@ let optionsReturnState='PAUSE';
 let questsReturnState='MENU';
 let charShopReturnState='MENU';
 let notificationsReturnState='MENU';
+let levelsReturnState='MENU';
 let optionsScroll=0, optionsTouchY=null;
 let settingsScroll=0, settingsTouchY=null;
 let socialTouchY=null;
@@ -4353,6 +4420,63 @@ const QUESTS_PER_HOUR_MAX=20;
 let jetpackCount=0, regenUsed=0;
 let pwrCounts={JETPACK:0,MAGNET:0,BOOST:0,SHIELD:0,SLOW:0,HEALTH_BOOST:0,MINI_JETPACK:0,NEW_STAGE:0,REGEN:0,X2_GEMS:0,GEM_DROP:0,BAD_LUCK:0};
 
+const MAX_LEVEL=100;
+function loadLevelXP(){ return Math.max(0,Number(localStorage.getItem('slope_level_xp')||'0')); }
+function saveLevelXP(v){ localStorage.setItem('slope_level_xp',String(Math.max(0,Math.floor(v||0)))); if (typeof queueCloudSync==='function') queueCloudSync(); }
+function loadClaimedLevelRewards(){ try{return JSON.parse(localStorage.getItem('slope_level_claimed')||'[]').map(Number);}catch{return[];} }
+function saveClaimedLevelRewards(v){ localStorage.setItem('slope_level_claimed',JSON.stringify(v||[])); if (typeof queueCloudSync==='function') queueCloudSync(); }
+let levelXp=loadLevelXP();
+let claimedLevelRewards=loadClaimedLevelRewards();
+function xpRequiredForLevel(level){ const l=Math.max(1,Math.min(MAX_LEVEL,Number(level)||1)); return Math.floor(220 + (l-1)*95 + Math.pow(l-1,1.42)*26); }
+function totalXpForLevel(level){ let t=0; for (let i=1;i<level;i++) t+=xpRequiredForLevel(i); return t; }
+function levelFromXp(xp){ let lvl=1, cur=Math.max(0,Number(xp)||0); while (lvl<MAX_LEVEL){ const need=xpRequiredForLevel(lvl); if (cur<need) break; cur-=need; lvl++; } return lvl; }
+function currentLevel(){ return levelFromXp(levelXp); }
+function levelProgress(){ const lvl=currentLevel(); if (lvl>=MAX_LEVEL) return {lvl,cur:xpRequiredForLevel(MAX_LEVEL),need:xpRequiredForLevel(MAX_LEVEL),pct:1}; const base=totalXpForLevel(lvl); const cur=Math.max(0,levelXp-base); const need=xpRequiredForLevel(lvl); return {lvl,cur,need,pct:clamp(cur/Math.max(1,need),0,1)}; }
+
+const LEVEL_SPECIAL_REWARDS={
+  1:{title:'Starter reward pack',skin:'default'},5:{title:'Rookie Glow title'},10:{skin:'arctic'},15:{aura:'static_ring'},20:{theme:'retrowave'},
+  25:{skin:'titanium'},30:{aura:'volt_core'},35:{theme:'deep_space'},40:{skin:'nebula'},45:{aura:'radiant_halo'},50:{theme:'prism',badge:'milestone'},
+  55:{skin:'cosmic'},60:{aura:'quantum_pulse'},65:{theme:'electric_sky'},70:{skin:'phantom'},75:{aura:'mythic_spark'},80:{theme:'lava_rift',badge:'elite'},
+  85:{skin:'spectrum'},90:{aura:'celestial_ring'},95:{theme:'solar_crown'},100:{skin:'ascendant',aura:'neon_crown',theme:'omega_grid',badge:'master'}
+};
+function levelGemReward(lvl){
+  const table={1:500,2:300,3:300,4:400,5:500,6:400,7:400,8:500,9:500,10:750,11:500,12:500,13:600,14:600,15:1000,16:600,17:700,18:700,19:700,20:1250,
+  21:700,22:800,23:800,24:800,25:1500,26:800,27:900,28:900,29:900,30:1750,31:900,32:1000,33:1000,34:1000,35:2000,36:1000,37:1100,38:1100,39:1100,40:2250,
+  41:1100,42:1200,43:1200,44:1200,45:2500,46:1200,47:1300,48:1300,49:1300,50:3000,51:1300,52:1400,53:1400,54:1400,55:3250,56:1400,57:1500,58:1500,59:1500,60:3500,
+  61:1500,62:1600,63:1600,64:1600,65:3750,66:1600,67:1700,68:1700,69:1700,70:4000,71:1700,72:1800,73:1800,74:1800,75:4250,76:1800,77:1900,78:1900,79:1900,80:4500,
+  81:2000,82:2000,83:2000,84:2100,85:4750,86:2100,87:2100,88:2200,89:2200,90:5000,91:2200,92:2300,93:2300,94:2400,95:5500,96:2400,97:2500,98:2500,99:3000,100:10000};
+  return Number(table[lvl]||0);
+}
+function rewardLevel(lvl){
+  const n=Math.max(1,Math.min(MAX_LEVEL,Number(lvl)||1));
+  if (claimedLevelRewards.includes(n)) return false;
+  claimedLevelRewards.push(n); saveClaimedLevelRewards(claimedLevelRewards);
+  const gems=levelGemReward(n); if (gems>0) totalGems=addToBank(gems);
+  const sp=LEVEL_SPECIAL_REWARDS[n]||{};
+  if (sp.skin && CHAR_CATALOG.find(c=>c.id===sp.skin) && !unlockedChars.includes(sp.skin)) { unlockChar(sp.skin); unlockedChars=loadUnlocked(); }
+  if (sp.aura && AURA_CATALOG.find(a=>a.id===sp.aura) && !unlockedAuras.includes(sp.aura)) { unlockGeneric(sp.aura,unlockedAuras,saveAuraUnlocks); }
+  if (sp.theme && THEME_CATALOG.find(t=>t.id===sp.theme) && !unlockedThemes.includes(sp.theme)) { unlockGeneric(sp.theme,unlockedThemes,saveThemeUnlocks); }
+  addNotif(`LEVEL ${n} REWARD CLAIMED +${gems}◆`,CFG.YL);
+  return true;
+}
+function gainXP(amount,source='run'){
+  const add=Math.max(0,Math.floor(Number(amount)||0));
+  if (!add) return;
+  const before=currentLevel();
+  levelXp+=add; saveLevelXP(levelXp);
+  const after=currentLevel();
+  if (after>before) addNotif(`LEVEL UP! ${before} → ${after}`,CFG.GR);
+}
+
+function addStatCount(key,inc=1){ const v=Math.max(0,Number(localStorage.getItem(key)||'0')+Number(inc||0)); localStorage.setItem(key,String(v)); return v; }
+function addSpentGems(n){ return addStatCount('slope_spent_gems',Math.max(0,Number(n)||0)); }
+function drawLevelBadge(x,y,size,lvl,col=CFG.CY){
+  ctx.save(); ctx.translate(x,y); ctx.rotate((menuT||0)*0.45);
+  ctx.strokeStyle=col; ctx.lineWidth=2; glow(col,10); ctx.strokeRect(-size/2,-size/2,size,size);
+  ctx.fillStyle=hexToRgba(col,0.14); ctx.fillRect(-size/2,-size/2,size,size); ctx.restore();
+  setFont(Math.max(9,Math.floor(size*0.38)),'900'); glow(col,8); txt(String(lvl),x,y+4,col);
+}
+
 function makeQuest(id,label,desc,reward,check){ return {id,label,desc,reward,check}; }
 
 function buildObjectivePool() {
@@ -4365,6 +4489,28 @@ function buildObjectivePool() {
   addId('survive60','Survive 60s','Stay alive 60 seconds',200,()=>gameTime>=60);
   addId('gems200','Collect 200 Gems','In a single run',500,()=>gemsCollected>=200);
   addId('score5000','Score 5000','Reach 5000 points',500,()=>score>=5000);
+
+  const EXTREME_QUESTS=[
+    ['ext1','Survive 90 seconds in one run',()=>gameTime>=90],['ext2','Survive 120 seconds in one run',()=>gameTime>=120],['ext3','Survive 150 seconds in one run',()=>gameTime>=150],
+    ['ext4','Reach Stage 5',()=>adventureStage>=4||impossibleStage>=4],['ext5','Reach Stage 6',()=>adventureStage>=5||impossibleStage>=5],['ext6','Reach Stage 7',()=>adventureStage>=6||impossibleStage>=6],
+    ['ext7','Reach max stage in any standard mode',()=>!canAdvanceStage()&&isStageMode()],['ext8','Score 10,000 in one run',()=>score>=10000],['ext9','Score 20,000 in one run',()=>score>=20000],['ext10','Score 30,000 in one run',()=>score>=30000],
+    ['ext11','Score 50,000 in one run',()=>score>=50000],['ext12','Earn x3 combo',()=>maxCombo>=3],['ext13','Earn x5 combo',()=>maxCombo>=5],['ext14','Earn x8 combo',()=>maxCombo>=8],['ext15','Earn x10 combo',()=>maxCombo>=10],
+    ['ext16','Collect 100 gems in one run',()=>gemsCollected>=100],['ext17','Collect 250 gems in one run',()=>gemsCollected>=250],['ext18','Collect 500 gems in one run',()=>gemsCollected>=500],
+    ['ext19','Collect 1,000 total gems across runs',()=>totalGems>=1000],['ext20','Collect 5,000 total gems across runs',()=>totalGems>=5000],
+    ['ext21','Use 3 powerups in one run',()=>Object.values(pwrCounts).reduce((a,b)=>a+b,0)>=3],['ext22','Use 5 powerups in one run',()=>Object.values(pwrCounts).reduce((a,b)=>a+b,0)>=5],
+    ['ext23','Use 10 powerups across runs',()=>Number(localStorage.getItem('slope_total_pwr')||'0')>=10],['ext24','Collect 15 powerups across runs',()=>Number(localStorage.getItem('slope_total_pwr')||'0')>=15],['ext25','Collect 30 powerups across runs',()=>Number(localStorage.getItem('slope_total_pwr')||'0')>=30],
+    ['ext26','Finish a run with 2 lives remaining',()=>gs==='OVER'&&lives>=2],['ext27','Finish a run with full lives remaining',()=>gs==='OVER'&&lives===maxLives],['ext28','Survive 45 seconds without collecting a gem',()=>gameTime>=45&&gemsCollected===0],
+    ['ext29','Survive 60 seconds without using a powerup',()=>gameTime>=60&&Object.values(pwrCounts).reduce((a,b)=>a+b,0)===0],['ext30','Survive 30 seconds at high speed',()=>gameTime>=30&&terrain.speed>420],
+    ['ext31','Reach Stage 3 in SLOPE INSTANT!',()=>gameMode==='LTM'&&getActiveLtm().id==='slope_instant'&&ltmStage>=2],['ext32','Reach max stage in SLOPE INSTANT!',()=>gameMode==='LTM'&&getActiveLtm().id==='slope_instant'&&!canAdvanceStage()],
+    ['ext33','Complete 3 daily quests in one day',()=>Number(localStorage.getItem('slope_daily_completed')||'0')>=3],['ext34','Complete 5 daily quests in one day',()=>Number(localStorage.getItem('slope_daily_completed')||'0')>=5],
+    ['ext35','Complete 10 daily quests total',()=>Number(localStorage.getItem('slope_daily_total')||'0')>=10],['ext36','Complete 25 daily quests total',()=>Number(localStorage.getItem('slope_daily_total')||'0')>=25],['ext37','Complete 50 daily quests total',()=>Number(localStorage.getItem('slope_daily_total')||'0')>=50],
+    ['ext38','Clear a challenge-unlock cosmetic mission',()=>doneObjs.includes('score5000')||doneObjs.includes('survive60')],['ext39','Unlock 5 skins',()=>unlockedChars.length>=5],['ext40','Unlock 10 skins',()=>unlockedChars.length>=10],['ext41','Unlock 5 auras',()=>unlockedAuras.length>=5],['ext42','Unlock 10 themes',()=>unlockedThemes.length>=10],
+    ['ext43','Spend 25,000 gems',()=>Number(localStorage.getItem('slope_spent_gems')||'0')>=25000],['ext44','Spend 100,000 gems',()=>Number(localStorage.getItem('slope_spent_gems')||'0')>=100000],
+    ['ext45','Get a personal best score',()=>score>=bestScore],['ext46','Beat your personal best twice',()=>Number(localStorage.getItem('slope_pb_beats')||'0')>=2],
+    ['ext47','Survive in Impossible Mode for 45 seconds',()=>gameMode==='IMPOSSIBLE'&&gameTime>=45],['ext48','Survive in Impossible Mode for 75 seconds',()=>gameMode==='IMPOSSIBLE'&&gameTime>=75],['ext49','Reach x5 combo in Impossible Mode',()=>gameMode==='IMPOSSIBLE'&&maxCombo>=5],
+    ['ext50','Complete a full seasonal milestone chain',()=>currentLevel()>=100]
+  ];
+  EXTREME_QUESTS.forEach((q,i)=>addId(q[0],`EXTREME ${i+1}: ${q[1]}`,q[1],2200+i*45,q[2]));
 
   for (let t=10;t<=400;t+=5) add(`Collect ${t} Gems`,`In a single run`,80+Math.floor(t*1.8),()=>gemsCollected>=t);
   for (let t=500;t<=25000;t+=250) add(`Score ${t}`,`Reach ${t} points`,90+Math.floor(t/40),()=>score>=t);
@@ -4440,6 +4586,7 @@ function tickObjectives() {
     if (obj.check()) {
       doneObjs.push(obj.id); saveDoneObjs(doneObjs);
       totalGems=addToBank(obj.reward);
+      gainXP(70 + Math.floor(obj.reward*0.35),'quest');
       objAnims.push({id:obj.id,t:3.5,label:obj.label,reward:obj.reward,col:CFG.YL});
       addNotif(`QUEST: ${obj.label} +${obj.reward}◆`,CFG.YL);
       CHAR_CATALOG.forEach(c=>{
@@ -4608,7 +4755,7 @@ function handleShopCategoryItem(item, pageKey){
   if (pageKey==='skins') {
     if (unlockedChars.includes(item.id)) { setSelectedChar(item.id); charShopMsg=`${item.name} selected!`; charShopMsgT=2; return; }
     if (item.unlock==='buy') {
-      if (totalGems>=item.cost) { totalGems-=item.cost; saveBank(totalGems); unlockChar(item.id); unlockedChars=loadUnlocked(); setSelectedChar(item.id); charShopMsg=`${item.name} unlocked!`; charShopMsgT=2.5; SFX.pwr(); }
+      if (totalGems>=item.cost) { totalGems-=item.cost; addSpentGems(item.cost); saveBank(totalGems); unlockChar(item.id); unlockedChars=loadUnlocked(); setSelectedChar(item.id); charShopMsg=`${item.name} unlocked!`; charShopMsgT=2.5; SFX.pwr(); }
       else { charShopMsg=`Need ${item.cost}◆ gems!`; charShopMsgT=1.5; SFX.hit(); }
     } else { charShopMsg=`Complete: ${item.objLabel}`; charShopMsgT=2; }
     return;
@@ -4616,7 +4763,7 @@ function handleShopCategoryItem(item, pageKey){
   if (pageKey==='auras') {
     if (unlockedAuras.includes(item.id)) { setSelectedAura(item.id); charShopMsg=`${item.name} aura selected!`; charShopMsgT=2; return; }
     if (item.unlock==='buy') {
-      if (totalGems>=item.cost) { totalGems-=item.cost; saveBank(totalGems); unlockGeneric(item.id,unlockedAuras,saveAuraUnlocks); setSelectedAura(item.id); charShopMsg=`${item.name} aura unlocked!`; charShopMsgT=2.5; SFX.pwr(); }
+      if (totalGems>=item.cost) { totalGems-=item.cost; addSpentGems(item.cost); saveBank(totalGems); unlockGeneric(item.id,unlockedAuras,saveAuraUnlocks); setSelectedAura(item.id); charShopMsg=`${item.name} aura unlocked!`; charShopMsgT=2.5; SFX.pwr(); }
       else { charShopMsg=`Need ${item.cost}◆ gems!`; charShopMsgT=1.5; SFX.hit(); }
     } else { charShopMsg=`Complete: ${item.objLabel}`; charShopMsgT=2; }
     return;
@@ -4624,7 +4771,7 @@ function handleShopCategoryItem(item, pageKey){
   if (pageKey==='themes') {
     if (unlockedThemes.includes(item.id)) { setSelectedTheme(item.id); charShopMsg=`${item.name} theme selected!`; charShopMsgT=2; return; }
     if (item.unlock==='buy') {
-      if (totalGems>=item.cost) { totalGems-=item.cost; saveBank(totalGems); unlockGeneric(item.id,unlockedThemes,saveThemeUnlocks); setSelectedTheme(item.id); charShopMsg=`${item.name} theme unlocked!`; charShopMsgT=2.5; SFX.pwr(); }
+      if (totalGems>=item.cost) { totalGems-=item.cost; addSpentGems(item.cost); saveBank(totalGems); unlockGeneric(item.id,unlockedThemes,saveThemeUnlocks); setSelectedTheme(item.id); charShopMsg=`${item.name} theme unlocked!`; charShopMsgT=2.5; SFX.pwr(); }
       else { charShopMsg=`Need ${item.cost}◆ gems!`; charShopMsgT=1.5; SFX.hit(); }
     } else { charShopMsg=`Complete: ${item.objLabel}`; charShopMsgT=2; }
   }
@@ -4680,6 +4827,21 @@ function handleCharShopTap(p) {
   });
 }
 
+
+function fmtCountdown(ms){
+  let v=Math.max(0,Math.floor(ms/1000));
+  const h=Math.floor(v/3600); v-=h*3600;
+  const m=Math.floor(v/60); const sec=v-m*60;
+  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+}
+function shopCountdownHour(){ const now=new Date(); const next=new Date(now); next.setMinutes(60,0,0); return fmtCountdown(next-now); }
+function shopCountdownDaily(){
+  const now=new Date();
+  const next=new Date(now.getFullYear(),now.getMonth(),now.getDate(),20,0,0,0);
+  if (next<=now) next.setDate(next.getDate()+1);
+  return fmtCountdown(next-now);
+}
+
 function drawCharShop(t) {
   ctx.fillStyle='#000'; ctx.fillRect(0,0,LW,LH);
   drawPerspGrid(0,0.08); drawBgSquares();
@@ -4709,6 +4871,19 @@ function drawCharShop(t) {
 
   setFont(26,'900'); glow(CFG.YL,18); txt(pageTitle,LW/2,52,CFG.YL);
   setFont(11,'700'); glow(CFG.CY,10); txt(`◆ ${totalGems} GEMS`,LW/2,70,CFG.CY);
+  if (!isInv) {
+    const tabs=['FEATURED','SKINS','AURAS','THEMES','BUNDLES','BOOSTS','UPGRADES','LIMITED','SEASONAL','QUEST REWARDS','DAILY','VAULT','ALL ITEMS'];
+    let tx=10,ty=8;
+    tabs.forEach((tb,idx)=>{
+      const tw=Math.max(42,ctx.measureText(tb).width+12);
+      if (tx+tw>LW-10) return;
+      drawNeonBtn(tx,ty,tw,20,idx===0?CFG.CY:'#3f5668',tb,7,0.9,0);
+      tx+=tw+4;
+    });
+    setFont(8,'700',"'Share Tech Mono',monospace"); noGlow();
+    txt(`TODAY'S SPOTLIGHT • ${shopCountdownHour()}`,16,96,'#9feeff','left');
+    txt(`OTHER ITEMS • ${shopCountdownDaily()}`,LW-16,96,'#9feeff','right');
+  }
   ctx.save(); ctx.strokeStyle='rgba(255,230,0,0.3)'; ctx.lineWidth=1;
   ctx.beginPath(); ctx.moveTo(40,80); ctx.lineTo(LW-40,80); ctx.stroke(); ctx.restore();
 
@@ -6871,7 +7046,9 @@ function getDailyLtmIndex(){
   const now=new Date();
   const key=`${now.getUTCFullYear()}-${now.getUTCMonth()+1}-${now.getUTCDate()}`;
   let h=0; for (let i=0;i<key.length;i++) h=(h*31+key.charCodeAt(i))>>>0;
-  return h%Math.max(1,LTM_MODES.length);
+  let idx=h%Math.max(1,LTM_MODES.length);
+  if ((LTM_MODES[idx]&&LTM_MODES[idx].id)==='metro') idx=(idx+1)%Math.max(1,LTM_MODES.length);
+  return idx;
 }
 function getDailyCountdown(){
   const now=new Date();
@@ -7268,11 +7445,12 @@ function finalizeGameOver() {
   continueOfferTimer=0;
   gs='OVER';
   SFX.gameOver();
-  if (score>bestScore) bestScore=score;
+  if (score>bestScore) { bestScore=score; addStatCount('slope_pb_beats',1); }
   if (gameMode==='ENDLESS') modeScores.endless=Math.max(modeScores.endless||0,score);
   if (gameMode==='ADVENTURE') modeScores.adventure=Math.max(modeScores.adventure||0,score);
   if (gameMode==='IMPOSSIBLE') modeScores.impossible=Math.max(modeScores.impossible||0,score);
   if (gameMode==='LTM') modeScores.ltm=Math.max(modeScores.ltm||0,score);
+  gainXP(Math.floor(gameTime*1.2) + Math.floor(score/220) + Math.floor(Math.max(0,maxCombo-1)*22) + (gameMode==='IMPOSSIBLE'?90:(gameMode==='LTM'?70:40)),'run_end');
   const runs=parseInt(localStorage.getItem('slope_runs')||'0',10)+1;
   const total=parseFloat(localStorage.getItem('slope_totalTime')||'0')+Math.max(0,gameTime);
   localStorage.setItem('slope_runs',String(runs));
@@ -7336,11 +7514,13 @@ function collectGem(gem) {
   else if (gemStreak>=5)  multi=2;
   else                     multi=1;
   if (multi>maxCombo) maxCombo=multi;
+  gainXP(Math.max(0,multi-1),'combo');
   const pts=gem.type.pts*scoreMultiplier()*(activePwr==='BOOST'?scoreBoostMult():1);
   score+=pts; scorePopT=0.3;
   const gm=(gemDoubleActive?Math.max(2,gemBoostMult):1);
   const earned=gem.type.gemVal*gm;
   totalGems=addToBank(earned);
+  gainXP(2 + Math.floor(earned*0.8),'gems');
   const tier=GEM_TYPES.indexOf(gem.type);
   SFX.gem(tier);
   burst(gem.x,gem.y,gem.type.col,12,180);
@@ -7351,6 +7531,7 @@ function collectGem(gem) {
 
 function collectPwr(pwr) {
   pwr.collected=true; pwr.active=false;
+  addStatCount('slope_total_pwr',1);
   const col=pwr.info.col;
   if      (pwr.key==='JETPACK')      { SFX.jetpack(); player.activateJetpack(10.0); worldSpeedMult=1.3; jetpackCount++; pwrCounts.JETPACK++; }
   else if (pwr.key==='SHIELD')       { SFX.pwr(); activatePwr('SHIELD',shieldDuration(150)); pwrCounts.SHIELD++; addRing(pwr.x,pwr.y,CFG.BL,70,240,2.5); }
@@ -7370,6 +7551,7 @@ function collectPwr(pwr) {
   else if (pwr.key==='BAD_LUCK')     { SFX.hit(); activateBadLuck(); pwrCounts.BAD_LUCK++; }
   else SFX.pwr();
   burst(pwr.x,pwr.y,col,24,220); ringBurst(pwr.x,pwr.y,col);
+  gainXP(28,'powerup');
   addShake(6,0.2); flashAlpha=0.35; flashCol=col;
   if (pwr.key!=='HEALTH_BOOST'&&pwr.key!=='REGEN'&&pwr.key!=='MINI_JETPACK'&&pwr.key!=='NEW_STAGE'&&pwr.key!=='X2_GEMS'&&pwr.key!=='X4_GEMS'&&pwr.key!=='SICK'&&pwr.key!=='LTM_SPECIAL'&&pwr.key!=='GEM_DROP'&&pwr.key!=='BAD_LUCK'&&pwr.key!=='IMMUNITY') {
     addNotif(`${pwr.info.label} ACTIVATED!`,col);
@@ -7914,6 +8096,13 @@ function loop(ts) {
 
   if (gs==='NOTIFICATIONS') {
     drawNotificationsScreen(menuT);
+    drawTransition();
+    drawTopOverlays(menuT);
+    requestAnimationFrame(loop); return;
+  }
+
+  if (gs==='LEVELS') {
+    drawLevelsScreen(menuT);
     drawTransition();
     drawTopOverlays(menuT);
     requestAnimationFrame(loop); return;
