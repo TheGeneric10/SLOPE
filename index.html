@@ -123,6 +123,17 @@ const IMP_STAGES=[
   {name:'STAGE 4', label:'EXTREME', spd:580, spdMax:760, shrink:0.014, theme:'rgba(255,10,10,0.24)'},
 ];
 
+const BRIDGE_STAGES=[
+  {name:'STAGE 1', label:'VERY EASY', spd:96, spdMax:210, shrink:0.0012, obsInt:[6.8,9.2], duration:70, easyLanes:true},
+  {name:'STAGE 2', label:'EASY', spd:140, spdMax:300, shrink:0.0028, obsInt:[5.2,7.4], duration:45},
+  {name:'STAGE 3', label:'MEDIUM', spd:200, spdMax:390, shrink:0.0044, obsInt:[4.0,6.0], duration:40},
+  {name:'STAGE 4', label:'HARD', spd:265, spdMax:470, shrink:0.0058, obsInt:[3.1,4.9], duration:45, badLuck:true},
+  {name:'STAGE 5', label:'VERY HARD', spd:335, spdMax:560, shrink:0.0072, obsInt:[2.4,3.8], duration:60, badLuck:true},
+  {name:'STAGE 6', label:'INTENSE', spd:410, spdMax:640, shrink:0.0086, obsInt:[1.9,3.0], duration:70},
+  {name:'STAGE 7', label:'IMPOSSIBLE', spd:490, spdMax:730, shrink:0.0102, obsInt:[1.5,2.5], duration:80},
+  {name:'STAGE 8', label:'EXTREME', spd:570, spdMax:800, shrink:0.0118, obsInt:[1.2,2.1], duration:999},
+];
+
 const LTM_MODES=[
   {id:'gold_rush', name:'GOLD RUSH', desc:'Golden adventure score pop', cardCol:'#ffd700', stageDuration:30, stages:[
     {name:'STAGE 1',label:'VERY EASY',spd:110,spdMax:230,shrink:0.0015,obsInt:[5.8,8.0]},
@@ -250,6 +261,7 @@ function nudgeUiScroll(dir){
   if (gs==='QUESTS') { questScroll=clamp(questScroll+amt,minQuestScroll(),0); return true; }
   if (gs==='LEADERBOARD') { leaderboardScroll=clamp(leaderboardScroll+amt,minLeaderboardScroll(),0); return true; }
   if (gs==='PROFILE') { profileScroll=clamp(profileScroll+amt,minProfileScroll(),0); return true; }
+  if (gs==='MODESELECT') { const minX=Math.min(0,LW-modeSelContentW); modeSelScrollX=clamp(modeSelScrollX+amt*2,minX,0); return true; }
   if (gs==='SHOP') { shopScroll=clamp(shopScroll+amt,minShopScroll(),0); return true; }
   if (gs==='SETTINGS') { settingsScroll=clamp(settingsScroll+amt,minSettingsScroll(),0); return true; }
   if (gs==='OPTIONS') { optionsScroll=clamp(optionsScroll+amt,minOptionsScroll(),0); return true; }
@@ -381,7 +393,7 @@ const BTNS = {
   pause:null, resume:null, menuFromPause:null, pauseSkins:null, pauseQuests:null,
   shopSkip:null, shopBack:null,
   charBack:null, charPrev:null, charNext:null, charShop:null,
-  modeEndless:null, modeAdventure:null, modeImpossible:null, modeLtm:null,
+  modeEndless:null, modeAdventure:null, modeImpossible:null, modeLtm:null, modePreviewBridge:null, modeGuestSignIn:null,
   about:null,
   quests:null, questsBack:null,
   leaderboard:null, leaderboardPause:null, leaderboardBack:null, leaderboardTabGlobal:null, leaderboardTabEndless:null, leaderboardTabAdventure:null, leaderboardTabImpossible:null, leaderboardTabLtm:null,
@@ -653,7 +665,7 @@ function drawPlayerCardPopup(t){
   const status=getStatusValue();
   ctx.save();
   ctx.fillStyle='rgba(0,0,0,0.74)'; ctx.fillRect(0,0,LW,LH);
-  const w=322,h=250,x=(LW-w)/2,y=(LH-h)/2;
+  const w=322,h=262,x=(LW-w)/2,y=(LH-h)/2;
   ctx.fillStyle='rgba(5,12,18,0.98)'; ctx.fillRect(x,y,w,h);
   ctx.strokeStyle='rgba(0,245,255,0.45)'; ctx.lineWidth=2; glow(CFG.CY,12); ctx.strokeRect(x,y,w,h);
   BTNS.playerCardClose={x:x+w-34,y:y+8,w:24,h:24};
@@ -665,27 +677,27 @@ function drawPlayerCardPopup(t){
     if (playerCardPopup.lite) {
       BTNS.playerCardEdit=null; BTNS.playerCardFav=null; BTNS.playerCardFind=null;
     } else {
-      BTNS.playerCardEdit={x:x+10,y:y+10,w:56,h:24};
-      BTNS.playerCardFav={x:x+72,y:y+10,w:28,h:24};
-      BTNS.playerCardFind={x:x+106,y:y+10,w:56,h:24};
-      drawNeonBtn(BTNS.playerCardEdit.x,BTNS.playerCardEdit.y,56,24,CFG.CY,'EDIT',8,1,0);
-      drawNeonBtn(BTNS.playerCardFav.x,BTNS.playerCardFav.y,28,24,playerCardPopup.favorite?'#ff9a1a':CFG.YL,playerCardPopup.favorite?'★':'☆',10,1,0);
-      drawNeonBtn(BTNS.playerCardFind.x,BTNS.playerCardFind.y,56,24,CFG.GR,'FIND',8,1,0);
+      BTNS.playerCardEdit={x:x+10,y:y+10,w:62,h:24};
+      BTNS.playerCardFav={x:x+78,y:y+10,w:30,h:24};
+      BTNS.playerCardFind={x:x+114,y:y+10,w:62,h:24};
+      drawNeonBtn(BTNS.playerCardEdit.x,BTNS.playerCardEdit.y,62,24,CFG.CY,'EDIT',8,1,0);
+      drawNeonBtn(BTNS.playerCardFav.x,BTNS.playerCardFav.y,30,24,playerCardPopup.favorite?'#ff9a1a':CFG.YL,playerCardPopup.favorite?'★':'☆',10,1,0);
+      drawNeonBtn(BTNS.playerCardFind.x,BTNS.playerCardFind.y,62,24,CFG.GR,'FIND',8,1,0);
     }
   } else {
     BTNS.playerCardEdit=null; BTNS.playerCardFind=null;
-    BTNS.playerCardFav={x:x+146,y:y+10,w:28,h:24};
-    BTNS.playerCardFollow={x:x+180,y:y+10,w:74,h:24};
+    BTNS.playerCardFav={x:x+132,y:y+10,w:30,h:24};
+    BTNS.playerCardFollow={x:x+168,y:y+10,w:88,h:24};
     BTNS.playerCardUnfriend=null;
     let actionLabel='ADD FRIEND';
     let actionCol=CFG.GR;
     if (rel.incoming) { actionLabel='VIEW FRIEND REQUEST'; actionCol=CFG.YL; }
     else if (rel.outgoing) { actionLabel='CANCEL FRIEND REQUEST'; actionCol=CFG.PK; }
     else if (rel.friend) { actionLabel='FRIEND'; actionCol=CFG.CY; }
-    BTNS.playerCardAdd={x:x+10,y:y+10,w:130,h:24};
-    drawNeonBtn(BTNS.playerCardAdd.x,BTNS.playerCardAdd.y,130,24,actionCol,actionLabel,7,1,Math.sin(t*2));
-    drawNeonBtn(BTNS.playerCardFav.x,BTNS.playerCardFav.y,28,24,rel.favorite?'#ff9a1a':CFG.YL,rel.favorite?'★':'☆',10,1,0);
-    drawNeonBtn(BTNS.playerCardFollow.x,BTNS.playerCardFollow.y,74,24,rel.following?CFG.PK:CFG.CY,rel.following?'UNFOLLOW':'FOLLOW',8,1,0);
+    BTNS.playerCardAdd={x:x+10,y:y+10,w:116,h:24};
+    drawNeonBtn(BTNS.playerCardAdd.x,BTNS.playerCardAdd.y,116,24,actionCol,actionLabel,7,1,Math.sin(t*2));
+    drawNeonBtn(BTNS.playerCardFav.x,BTNS.playerCardFav.y,30,24,rel.favorite?'#ff9a1a':CFG.YL,rel.favorite?'★':'☆',10,1,0);
+    drawNeonBtn(BTNS.playerCardFollow.x,BTNS.playerCardFollow.y,88,24,rel.following?CFG.PK:CFG.CY,rel.following?'UNFOLLOW':'FOLLOW',8,1,0);
     if (rel.friend && playerCardFriendMenu.open) {
       const mx=x+10,my=y+38,mw=130,mh=50;
       ctx.fillStyle='rgba(0,0,0,0.92)'; ctx.fillRect(mx,my,mw,mh);
@@ -699,7 +711,7 @@ function drawPlayerCardPopup(t){
   }
 
   const name=String((playerCardPopup.isSelf?(auth&&auth.name):cardUser.name)||'Player');
-  const pfpX=x+w-48, pfpY=y+58, r=22;
+  const pfpX=x+w-48, pfpY=y+68, r=22;
   const cardAvatar=playerCardPopup.isSelf?String(profileAvatar||''):String(cardUser.avatar||'');
   if (cardAvatar) {
     const img=new Image(); img.src=cardAvatar;
@@ -1004,6 +1016,11 @@ function handleTap(e) {
       else doTransition('SHOP');
       return;
     }
+    if (hitBtn(p, BTNS.modePreviewBridge)) {
+      if (!(isSignedIn && isAdminUser)) { addNotif('ADMIN PREVIEW ONLY',CFG.PK); return; }
+      SFX.click(); gameMode='SLOPE_BRIDGE'; doTransition('SHOP'); return;
+    }
+    if (hitBtn(p, BTNS.modeGuestSignIn)) { SFX.click(); doTransition('SIGNIN'); return; }
     if (hitBtn(p, BTNS.modeNeonRush)) { SFX.click(); gameMode='NEON_RUSH'; doTransition('SHOP'); return; }
     if (hitBtn(p, BTNS.back)) { SFX.click(); doTransition('MENU'); return; }
     return;
@@ -1051,7 +1068,11 @@ function handleTap(e) {
   }
   if (gs === 'LEVELS') {
     if (hitBtn(p,BTNS.levelBack)) { SFX.click(); levelXpOpen=false; doTransition(levelsReturnState||'MENU'); levelsReturnState='MENU'; return; }
-    if (hitBtn(p,BTNS.levelClaim)) { SFX.click(); rewardLevel(currentLevel()); return; }
+    if (hitBtn(p,BTNS.levelClaim)) {
+      const nextTier=getNextClaimableTier();
+      if (nextTier!==null) { SFX.click(); rewardLevel(nextTier); }
+      return;
+    }
     if (hitBtn(p,BTNS.levelXpOpen)) { SFX.click(); levelXpOpen=!levelXpOpen; return; }
     if (levelXpOpen) { levelXpOpen=false; return; }
     return;
@@ -1218,6 +1239,7 @@ canvas.addEventListener('touchstart', e => {
   adminLtmTouchY = t.clientY;
   shopTouchY = t.clientY;
   socialTouchY = t.clientY;
+  modeSelTouchX = t.clientX;
   touchSwipe = 0; touchSwipeTarget = 0;
 }, { passive:false });
 
@@ -1227,6 +1249,17 @@ canvas.addEventListener('touchmove', e => {
   if (usingTouchJoy) return;
   if (!touchActive) return;
 
+  if (gs==='MODESELECT') {
+    const t=e.touches[0];
+    if (modeSelTouchX!==null) {
+      const dx=t.clientX-modeSelTouchX;
+      if (Math.abs(dx)>2) touchMoved=true;
+      const minX=Math.min(0,LW-modeSelContentW);
+      modeSelScrollX=clamp(modeSelScrollX+dx,minX,0);
+    }
+    modeSelTouchX=t.clientX;
+    return;
+  }
   if (gs==='QUESTS') {
     const t=e.touches[0];
     if (questTouchY!==null) {
@@ -1338,47 +1371,35 @@ canvas.addEventListener('touchmove', e => {
 
 canvas.addEventListener('touchend', e => {
   e.preventDefault();
+  disableUiNavFromPointer();
+  if (Date.now() - _lastTouchEnd < 450) return;
   _lastTouchEnd = Date.now();
-  if (!touchMoved) {
-    handleTap(e);
-  }
-  touchActive = false; touchSwipe = 0; touchSwipeTarget = 0; touchMoved = false; questTouchY = null; profileTouchY=null; leaderboardTouchY=null; adminLtmTouchY=null; shopTouchY=null; settingsTouchY=null; optionsTouchY=null; socialTouchY=null; joyL=false; joyR=false; usingTouchJoy=false; profileAvatarPressing=false; profileAvatarHoldFX=false; stopProfileCropInteraction();
-}, { passive:false });
-
-canvas.addEventListener('touchcancel', () => {
-  touchActive = false; touchSwipe = 0; touchSwipeTarget = 0; touchMoved = false; questTouchY = null; profileTouchY=null; leaderboardTouchY=null; adminLtmTouchY=null; shopTouchY=null; settingsTouchY=null; optionsTouchY=null; socialTouchY=null; joyL=false; joyR=false; usingTouchJoy=false; profileAvatarPressing=false; profileAvatarHoldFX=false; stopProfileCropInteraction();
+  touchActive = false; touchSwipe = 0; touchSwipeTarget = 0; touchMoved = false; questTouchY = null; profileTouchY=null; leaderboardTouchY=null; adminLtmTouchY=null; shopTouchY=null; settingsTouchY=null; optionsTouchY=null; socialTouchY=null; modeSelTouchX=null; joyL=false; joyR=false; usingTouchJoy=false; profileAvatarPressing=false; profileAvatarHoldFX=false; stopProfileCropInteraction();
+  handleTap(e);
 });
 
-// Mouse (desktop)
+canvas.addEventListener('touchcancel', () => {
+  touchActive = false; touchSwipe = 0; touchSwipeTarget = 0; touchMoved = false; questTouchY = null; profileTouchY=null; leaderboardTouchY=null; adminLtmTouchY=null; shopTouchY=null; settingsTouchY=null; optionsTouchY=null; socialTouchY=null; modeSelTouchX=null; joyL=false; joyR=false; usingTouchJoy=false; profileAvatarPressing=false; profileAvatarHoldFX=false; stopProfileCropInteraction();
+});
+
+// Mouse fallback
 canvas.addEventListener('mousedown', e => {
   disableUiNavFromPointer();
-  markPresenceActivity('mousedown');
-  if (gs==='PROFILE') {
+  touchActive=true; touchMoved=false; touchStartX=e.clientX; touchCurrentX=e.clientX;
+  if (gs==='PROFILE' && profileUploadState.active && profileUploadState.mode==='preview') {
     const p=getCanvasXY(e);
-    if (BTNS.profileAvatar) {
-      const dx=p.x-BTNS.profileAvatar.cx, dy=p.y-BTNS.profileAvatar.cy;
-      if ((dx*dx+dy*dy) <= (BTNS.profileAvatar.r*BTNS.profileAvatar.r)) { profileAvatarPressing=true; profileAvatarPressStart=Date.now(); profileAvatarHoldFX=false; }
+    const frame=220, fx=(LW-frame)/2, fy=((LH-410)/2)+44;
+    if (p.x>=fx && p.x<=fx+frame && p.y>=fy && p.y<=fy+frame) {
+      profileUploadState.drag=true; profileUploadState.lastX=p.x; profileUploadState.lastY=p.y;
     }
-    if (profileUploadState.active && profileUploadState.mode==='preview') {
-      const frame=220, fx=(LW-frame)/2, fy=((LH-410)/2)+44;
-      if (p.x>=fx && p.x<=fx+frame && p.y>=fy && p.y<=fy+frame) { profileUploadState.drag=true; profileUploadState.lastX=p.x; profileUploadState.lastY=p.y; }
-    }
-  }
-  if (gs==='PLAY' || gs==='PAUSE') {
-    touchActive = true; touchMoved = false;
-    touchStartX = e.clientX; touchCurrentX = e.clientX; touchSwipe = 0;
   }
 });
 canvas.addEventListener('mousemove', e => {
-  disableUiNavFromPointer();
-  markPresenceActivity('mousemove');
-  const mp=getCanvasXY(e);
-  mouseCanvasPos.x=mp.x; mouseCanvasPos.y=mp.y;
   if (gs==='PROFILE' && profileUploadState.active && profileUploadState.mode==='preview' && profileUploadState.drag) {
-    const p=mp;
-    profileUploadState.offX += p.x-profileUploadState.lastX;
-    profileUploadState.offY += p.y-profileUploadState.lastY;
-    profileUploadState.lastX=p.x; profileUploadState.lastY=p.y;
+    const np=getCanvasXY(e);
+    profileUploadState.offX += np.x-profileUploadState.lastX;
+    profileUploadState.offY += np.y-profileUploadState.lastY;
+    profileUploadState.lastX=np.x; profileUploadState.lastY=np.y;
     clampProfileUploadOffsets(profileUploadState,220);
     return;
   }
@@ -1401,6 +1422,12 @@ document.addEventListener('click', e => {
 
 document.addEventListener('wheel', e => {
   disableUiNavFromPointer();
+  if (gs==='MODESELECT') {
+    e.preventDefault();
+    const minX=Math.min(0,LW-modeSelContentW);
+    modeSelScrollX=clamp(modeSelScrollX - e.deltaY*0.5 - e.deltaX*0.8,minX,0);
+    return;
+  }
   if (gs==='QUESTS') {
     e.preventDefault();
     questScroll=clamp(questScroll - e.deltaY*0.6, minQuestScroll(), 0);
@@ -2310,6 +2337,8 @@ const PWR_TYPES={
   X4_GEMS:     {col:'#ffe066',label:'X4 GEMS',      icon:'💠', dur:8.0},
   SICK:        {col:'#ffffff',label:'SICK POWER',   icon:'🧪', dur:12.0},
   LTM_SPECIAL: {col:'#ffffff',label:'LTM SPECIAL',  icon:'✹', dur:10.0},
+  ROTATION:    {col:'#7cd6ff',label:'ROTATION',     icon:'⟳', dur:6.0},
+  BRIDGE:      {col:'#ff9a34',label:'BRIDGE+',      icon:'🧱', dur:8.0},
 };
 const PWR_WEIGHTED=[
   ...Array(4).fill('SHIELD'),
@@ -2332,6 +2361,16 @@ function randPwrKey() {
     if (!canAdvanceStage()) pool=pool.filter(k=>k!=='NEW_STAGE');
     if (adventureStage>=5 && Math.random()<0.28) return 'MINI_JETPACK';
     pool=pool.filter(k=>k!=='BAD_LUCK');
+    return pool[rndI(0,pool.length-1)];
+  }
+
+  if (gameMode==='NEON_RUSH') {
+    return 'SICK';
+  }
+
+  if (gameMode==='SLOPE_BRIDGE') {
+    const pool=['ROTATION','BRIDGE','SHIELD','BOOST','MAGNET','IMMUNITY','MINI_JETPACK','NEW_STAGE'];
+    if (bridgeStage>=3 && Math.random()<0.14) pool.push('BAD_LUCK');
     return pool[rndI(0,pool.length-1)];
   }
 
@@ -2563,6 +2602,23 @@ function drawTerrain() {
   segs.forEach((s,i)=>{const cx=(s.lx+s.rx)/2;i===0?ctx.moveTo(cx,s.y):ctx.lineTo(cx,s.y);});
   ctx.strokeStyle='rgba(0,245,255,0.06)'; ctx.lineWidth=1; noGlow(); ctx.stroke();
   ctx.setLineDash([]); ctx.restore();
+
+  if (gameMode==='SLOPE_BRIDGE' && bridgeLaneCount>1) {
+    ctx.save();
+    const cols=['rgba(255,160,40,0.45)','rgba(255,90,210,0.4)','rgba(120,214,255,0.35)'];
+    for (let lane=0; lane<bridgeLaneCount; lane++) {
+      ctx.beginPath();
+      segs.forEach((sg,i)=>{ const cx=(sg.lx+sg.rx)/2 + (lane-(bridgeLaneCount-1)/2)*18; i===0?ctx.moveTo(cx,sg.y):ctx.lineTo(cx,sg.y); });
+      const isCurrent=lane===bridgeCurrentLayer;
+      ctx.strokeStyle=cols[lane%cols.length]; ctx.lineWidth=isCurrent?2.1:1.2; glow(cols[lane%cols.length],isCurrent?12:5); ctx.stroke();
+      if (!isCurrent) {
+        ctx.globalAlpha=0.18; ctx.fillStyle='#000';
+        segs.forEach(sg=>ctx.fillRect(((sg.lx+sg.rx)/2 + (lane-(bridgeLaneCount-1)/2)*18)-10,sg.y-2,20,CFG.SEG_H+4));
+        ctx.globalAlpha=1;
+      }
+    }
+    ctx.restore();
+  }
 }
 
 function drawMagnetEffect(gemList,pwrList) {
@@ -2718,30 +2774,22 @@ function drawHUD() {
   setFont(22,'900'); glow(CFG.CY,14); txt(`${Math.floor(score)}${multiStr}`,0,22,CFG.CY);
   ctx.restore();
 
-  // EXP + Gem bank
+  // Gem bank strip (XP removed from HUD strip; XP shown on pickup)
   {
-    const xpVal=Math.floor(Math.max(0,Number(levelXp||0)));
     const gbW=196, gbH=18, gbX=(LW-gbW)/2, gbY=pdY+42;
     ctx.save();
     ctx.fillStyle='rgba(0,245,255,0.06)'; ctx.fillRect(gbX,gbY,gbW,gbH);
     ctx.strokeStyle='rgba(0,245,255,0.35)'; ctx.lineWidth=1; glow(CFG.CY,6); ctx.strokeRect(gbX,gbY,gbW,gbH);
     setFont(8,'700',"'Share Tech Mono',monospace"); noGlow();
-    txt('XP',gbX+12,gbY+13,'#ffe792','left');
-    setFont(9,'900'); glow('#ffe792',8); txt(`${xpVal}`,gbX+28,gbY+13,'#ffe792','left');
-    setFont(7,'700',"'Share Tech Mono',monospace"); noGlow(); txt('|',gbX+94,gbY+13,'rgba(180,230,255,0.55)','left');
-    ctx.fillStyle=CFG.CY;
-    ctx.beginPath();
-    ctx.moveTo(gbX+108,gbY+3); ctx.lineTo(gbX+112,gbY+9); ctx.lineTo(gbX+108,gbY+15); ctx.lineTo(gbX+104,gbY+9);
-    ctx.closePath();
-    ctx.fill();
-    setFont(9,'900'); glow(CFG.CY,8); txt(`${totalGems}`,gbX+120,gbY+13,CFG.CY,'left');
+    txt('GEMS',gbX+18,gbY+13,'#ffe792','left');
+    setFont(9,'900'); glow(CFG.CY,8); txt(`${totalGems}`,gbX+56,gbY+13,CFG.CY,'left');
     setFont(7,'700',"'Share Tech Mono',monospace"); noGlow();
     txt(`+${gemsCollected}`,gbX+gbW-8,gbY+13,CFG.YL,'right');
     ctx.restore();
   }
 
   ctx.save(); setFont(8,'400',"'Share Tech Mono',monospace");
-  const hsLabel=gameMode==='ADVENTURE'?'ADV BEST':gameMode==='IMPOSSIBLE'?'IMP BEST':gameMode==='LTM'?'LTM BEST':'END BEST';
+  const hsLabel=gameMode==='ADVENTURE'?'ADV BEST':gameMode==='IMPOSSIBLE'?'IMP BEST':gameMode==='LTM'?'LTM BEST':gameMode==='SLOPE_BRIDGE'?'BRIDGE BEST':'END BEST';
   txt(hsLabel,pdX+22,pdY+8,'rgba(0,245,255,0.42)','center');
   setFont(14,'700'); glow(CFG.CY,10); txt(`${Math.floor(currentModeBestScore())}`,pdX+22,pdY+22,CFG.CY,'center');
   ctx.restore();
@@ -2750,8 +2798,10 @@ function drawHUD() {
   if (isStageMode()) {
     ctx.save(); setFont(9,'700');
     const st=currentStageConfig();
-    glow(gameMode==='IMPOSSIBLE'?'#ff4455':CFG.GR,12);
-    txt(`${st.name} · ${st.label}`,LW/2,pdY+68,gameMode==='IMPOSSIBLE'?'#ff4455':CFG.GR); ctx.restore();
+    const stCol=gameMode==='IMPOSSIBLE'?'#ff4455':(gameMode==='SLOPE_BRIDGE'?'#7cd6ff':CFG.GR);
+    glow(stCol,12);
+    ctx.fillStyle='rgba(8,18,22,0.72)'; ctx.fillRect(LW/2-110,pdY+60,220,18);
+    txt(`${st.name} · ${st.label}`,LW/2,pdY+73,stCol); ctx.restore();
   }
 
   // Lives (right side)
@@ -3034,10 +3084,16 @@ function drawStartScreen(t) {
   setFont(60,'900'); glow(CFG.CY,30);
   ctx.fillStyle=CFG.CY; ctx.textAlign='center'; ctx.fillText('SLOPE',LW/2,titleY);
   setFont(13,'900'); glow(CFG.CY,10);
-  txt(SEASON_LIVE,LW/2+seasonScrollX,titleY+34,'rgba(0,245,255,0.8)');
-  setFont(11,'400',"'Share Tech Mono',monospace"); glow(CFG.CY,8);
-  txt(`${SEASON_NEXT} • ${SEASON_NEXT_RELEASE}`,LW/2,titleY+50,'rgba(0,245,255,0.7)');
-  txt(`SEASONAL LIVE EVENT IN ${getSeasonCountdown()}`,LW/2,titleY+64,'rgba(255,230,120,0.78)');
+  const guestEventLocked=!isSignedIn;
+  if (!guestEventLocked) {
+    txt(SEASON_LIVE,LW/2+seasonScrollX,titleY+34,'rgba(0,245,255,0.8)');
+    setFont(11,'400',"'Share Tech Mono',monospace"); glow(CFG.CY,8);
+    txt(`${SEASON_NEXT} • ${SEASON_NEXT_RELEASE}`,LW/2,titleY+50,'rgba(0,245,255,0.7)');
+    txt(`SEASONAL LIVE EVENT IN ${getSeasonCountdown()}`,LW/2,titleY+64,'rgba(255,230,120,0.78)');
+  } else {
+    setFont(10,'900'); glow('#66d9ff',10); txt('SIGN IN to unlock FREE events and expanded gamemodes',LW/2,titleY+48,'#66d9ff');
+    setFont(9,'700',"'Share Tech Mono',monospace"); noGlow(); txt('Guest mode has core modes only',LW/2,titleY+64,'rgba(180,230,255,0.72)');
+  }
   txt(`VERSION ${VERSION}`,LW/2,titleY+78,'rgba(0,245,255,0.35)');
 
   // Divider
@@ -3428,75 +3484,80 @@ function drawModeSelect(t) {
 
   const cardY=102, cardH=382, cardW=88, gap=8;
   const ltmVisible=isLtmModeVisible();
-  const cardCount=ltmVisible?4:3;
-  const startX=(LW-(cardW*cardCount+gap*(cardCount-1)))/2;
+  const showPreview=!!(isSignedIn && isAdminUser);
+  const cardCount=3+(ltmVisible?1:0)+(showPreview?1:0);
+  const totalCardW=cardW*cardCount+gap*(cardCount-1);
+  const startX=(LW-totalCardW)/2 + modeSelScrollX;
+  modeSelContentW=Math.max(LW,totalCardW+24);
+  modeSelScrollX=clamp(modeSelScrollX,Math.min(0,LW-modeSelContentW),0);
 
   const cards=[
-    {key:'modeEndless',x:startX,col:CFG.CY,title:'ENDLESS',sub:'CLASSIC',icon:'∞',feats:['Classic run','No cap','Score chase'],btn:'PLAY'},
-    {key:'modeAdventure',x:startX+cardW+gap,col:CFG.GR,title:'ADVENTURE',sub:'STAGES',icon:'🌀',feats:['Stage flow','Ramp','Rewards'],btn:'PLAY'},
-    {key:'modeImpossible',x:startX+(cardW+gap)*2,col:'#ff4455',title:'IMPOSSIBLE',sub:'ONE LIFE',icon:'☠',feats:['4 brutal','No regen','Red storm'],btn:'PLAY'},
-    ...(ltmVisible?[{key:'modeLtm',x:startX+(cardW+gap)*3,col:'#ffd700',title:'LTM',sub:'GLOBAL LIVE',icon:'★',feats:['Global RTDB mode','Internet required','10 themed rotations'],btn:'SELECT'}]:[])
+    {key:'modeEndless',col:CFG.CY,title:'ENDLESS',sub:'CLASSIC',icon:'∞',feats:['Classic run','No cap','Score chase'],btn:'PLAY'},
+    {key:'modeAdventure',col:CFG.GR,title:'ADVENTURE',sub:'STAGES',icon:'🌀',feats:['Stage flow','Ramp','Rewards'],btn:'PLAY'},
+    {key:'modeImpossible',col:'#ff4455',title:'IMPOSSIBLE',sub:'ONE LIFE',icon:'☠',feats:['4 brutal','No regen','Red storm'],btn:'PLAY'},
   ];
+  if (ltmVisible) cards.push({key:'modeLtm',col:'#ffd700',title:'LTM',sub:'GLOBAL LIVE',icon:'★',feats:['Global RTDB mode','Daily reset','10 themed rotations'],btn:'SELECT'});
+  if (showPreview) cards.push({key:'modePreviewBridge',col:'#7cd6ff',title:'PREVIEW',sub:'ADMIN ONLY',icon:'🧩',feats:['Season 2 test','SLOPE Bridge','Experimental'],btn:'PREVIEW'});
 
-  BTNS.modeLtm=null; BTNS.modeNeonRush=null;
+  BTNS.modeLtm=null; BTNS.modeNeonRush=null; BTNS.modePreviewBridge=null; BTNS.modeGuestSignIn=null;
 
   cards.forEach((c,i)=>{
-    const x=c.x,y=cardY;
+    const x=startX+i*(cardW+gap),y=cardY;
     BTNS[c.key]={x,y,w:cardW,h:cardH};
     ctx.save();
-    ctx.fillStyle=i===2?'rgba(255,50,50,0.12)':(i===1?'rgba(57,255,20,0.08)':'rgba(0,245,255,0.08)');
-    ctx.fillRect(x,y,cardW,cardH);
+    const fill=c.key==='modeImpossible'?'rgba(255,50,50,0.12)':(c.key==='modeAdventure'?'rgba(57,255,20,0.08)':'rgba(0,245,255,0.08)');
+    ctx.fillStyle=fill; ctx.fillRect(x,y,cardW,cardH);
     glow(c.col,14); ctx.strokeStyle=c.col; ctx.lineWidth=2; ctx.strokeRect(x,y,cardW,cardH);
-    setFont(i===2?12:14,'900'); glow(c.col,10); txt(c.title,x+cardW/2,y+28,c.col);
+    setFont(c.key==='modeImpossible'?12:14,'900'); glow(c.col,10); txt(c.title,x+cardW/2,y+28,c.col);
     setFont(8,'700',"'Share Tech Mono',monospace"); noGlow(); txt(c.sub,x+cardW/2,y+44,c.col);
-    if (i===2) {
+    if (c.key==='modeImpossible') {
       ctx.save(); ctx.fillStyle='#ffe600'; ctx.fillRect(x+cardW-34,y+4,30,12);
       setFont(7,'900',"'Share Tech Mono',monospace"); noGlow(); txt('NEW!',x+cardW-19,y+13,'#000'); ctx.restore();
     }
     if (c.key==='modeLtm') {
       const cTxt=getDailyCountdown();
-      ctx.save();
-      ctx.fillStyle='#ffe600'; ctx.fillRect(x+cardW-74,y+8,66,14);
-      setFont(7,'900',"'Share Tech Mono',monospace"); noGlow(); txt(cTxt,x+cardW-41,y+18,'#000');
-      ctx.restore();
+      ctx.save(); ctx.fillStyle='#ffe600'; ctx.fillRect(x+cardW-74,y+8,66,14);
+      setFont(7,'900',"'Share Tech Mono',monospace"); noGlow(); txt(cTxt,x+cardW-41,y+18,'#000'); ctx.restore();
     }
     setFont(26,'900'); glow(c.col,14); txt(c.icon,x+cardW/2,y+100,c.col);
     setFont(8,'400',"'Share Tech Mono',monospace"); noGlow();
     c.feats.forEach((f,j)=>txt(`• ${f}`,x+10,y+136+j*16,c.col,'left'));
-    const modeBest=i===0?Number(modeScores.endless||0):i===1?Number(modeScores.adventure||0):i===2?Number(modeScores.impossible||0):Number(modeScores.ltm||0);
+    const modeBest=c.key==='modeEndless'?Number(modeScores.endless||0):c.key==='modeAdventure'?Number(modeScores.adventure||0):c.key==='modeImpossible'?Number(modeScores.impossible||0):c.key==='modeLtm'?Number(modeScores.ltm||0):Number(modeScores.bridge||0);
     setFont(7,'700',"'Share Tech Mono',monospace"); noGlow();
     txt(`MY HIGHSCORE ${Math.floor(modeBest||0)}`,x+cardW/2,y+cardH-50,'rgba(220,245,255,0.85)');
-    const btnLbl=(c.key==='modeLtm'&&!isAdminUser)?'PLAY':c.btn;
-    drawNeonBtn(x+10,y+cardH-38,cardW-20,28,c.col,btnLbl,10,1,Math.sin(t*3+i));
+    drawNeonBtn(x+10,y+cardH-38,cardW-20,28,c.col,c.btn,9,1,Math.sin(t*3+i));
     ctx.restore();
   });
 
   if (navigator.onLine && (Date.now()-ltmConfigFetchAt>16000)) { loadGlobalLtmConfig(false); loadGlobalShopConfig(false); }
   const daily=getActiveLtm();
   const dailyIdx=clamp(ltmSelectedIndex>=0?ltmSelectedIndex:getDailyLtmIndex(),0,Math.max(0,LTM_MODES.length-1));
-  const themeA=daily.cardCol||'#ffd700';
+  const themeA=(daily&&daily.cardCol)||'#ffd700';
   const nextCol=(LTM_MODES[(dailyIdx+1)%LTM_MODES.length]&&LTM_MODES[(dailyIdx+1)%LTM_MODES.length].cardCol)||'#ffe45a';
   const soonW=cardW*cardCount+gap*(cardCount-1), soonH=62, soonX=startX, soonY=cardY+cardH+12;
-  ctx.save();
-  const bg=ctx.createLinearGradient(soonX,0,soonX+soonW,0);
-  bg.addColorStop(0,hexToRgba(themeA,0.18));
-  bg.addColorStop(1,hexToRgba(nextCol,0.18));
-  ctx.fillStyle=bg; ctx.fillRect(soonX,soonY,soonW,soonH);
-  glow(themeA,12); ctx.strokeStyle=hexToRgba(themeA,0.92); ctx.lineWidth=2; ctx.strokeRect(soonX,soonY,soonW,soonH);
-  const shineX=soonX + ((Math.sin(t*1.6)+1)/2)*(soonW+120)-120;
-  const shine=ctx.createLinearGradient(shineX,0,shineX+120,0);
-  shine.addColorStop(0,'transparent');
-  shine.addColorStop(0.5,'rgba(255,255,255,0.2)');
-  shine.addColorStop(1,'transparent');
-  ctx.fillStyle=shine; ctx.fillRect(soonX,soonY,soonW,soonH);
-  setFont(9,'900',"'Share Tech Mono',monospace"); noGlow();
-  txt(`LTM ${dailyIdx+1}/10 • ${daily.name}`,soonX+10,soonY+18,'#0d0d0d','left');
-  setFont(8,'700',"'Share Tech Mono',monospace");
-  txt(`${daily.desc||'Live special mode'} • ${(daily.specialName||'Mode bonus').slice(0,26)}`,soonX+10,soonY+34,'#ffffff','left');
-  const netTxt=ltmVisible?`GLOBAL ROTATION • NEXT UPDATE IN ${getDailyCountdown()}`:'SIGN IN + INTERNET REQUIRED FOR LTM';
-  txt(netTxt,soonX+10,soonY+50,'#0d0d0d','left');
-  ctx.restore();
 
+  if (ltmVisible) {
+    ctx.save();
+    const bg=ctx.createLinearGradient(soonX,0,soonX+soonW,0);
+    bg.addColorStop(0,hexToRgba(themeA,0.18));
+    bg.addColorStop(1,hexToRgba(nextCol,0.18));
+    ctx.fillStyle=bg; ctx.fillRect(soonX,soonY,soonW,soonH);
+    glow(themeA,12); ctx.strokeStyle=hexToRgba(themeA,0.92); ctx.lineWidth=2; ctx.strokeRect(soonX,soonY,soonW,soonH);
+    setFont(9,'900',"'Share Tech Mono',monospace"); noGlow();
+    txt(`LTM ${dailyIdx+1}/10 • ${daily.name}`,soonX+10,soonY+18,'#0d0d0d','left');
+    setFont(8,'700',"'Share Tech Mono',monospace");
+    txt(`${daily.desc||'Live special mode'} • ${(daily.specialName||'Mode bonus').slice(0,26)}`,soonX+10,soonY+34,'#ffffff','left');
+    txt(`GLOBAL ROTATION • RESETS IN ${getDailyCountdown()}`,soonX+10,soonY+50,'#0d0d0d','left');
+    ctx.restore();
+  } else {
+    ctx.save();
+    ctx.fillStyle='rgba(16,28,42,0.92)'; ctx.fillRect(soonX,soonY,soonW,soonH);
+    ctx.strokeStyle='#66d9ff'; ctx.lineWidth=2; glow('#66d9ff',10); ctx.strokeRect(soonX,soonY,soonW,soonH);
+    setFont(10,'900'); glow('#66d9ff',9); txt('SIGN IN to unlock FREE events and expanded gamemodes',LW/2,soonY+24,'#66d9ff');
+    BTNS.modeGuestSignIn={x:LW/2-88,y:soonY+34,w:176,h:22};
+    drawNeonBtn(BTNS.modeGuestSignIn.x,BTNS.modeGuestSignIn.y,176,22,CFG.YL,'SIGN IN',9,1,Math.sin(t*2.5));
+    ctx.restore();
+  }
 
   const nrY=soonY+soonH+10;
   const nrW=soonW;
@@ -3509,6 +3570,14 @@ function drawModeSelect(t) {
   drawNeonBtn(BTNS.modeNeonRush.x,BTNS.modeNeonRush.y,90,26,CFG.YL,'PLAY',10,1,Math.sin(t*3));
   ctx.restore();
 
+  if (modeSelContentW>LW+2) {
+    const sbY=nrY+nrH+8, sbX=24, sbW=LW-48, thumbW=Math.max(42,(LW/modeSelContentW)*sbW);
+    const minX=Math.min(0,LW-modeSelContentW);
+    const frac=minX<0?((-modeSelScrollX)/Math.abs(minX)):0;
+    const tx=sbX + frac*(sbW-thumbW);
+    ctx.fillStyle='rgba(0,245,255,0.18)'; ctx.fillRect(sbX,sbY,sbW,4);
+    ctx.fillStyle='rgba(0,245,255,0.72)'; ctx.fillRect(tx,sbY,thumbW,4);
+  }
   const bW=130,bH=34,bX=(LW-bW)/2,bY=LH-46;
   BTNS.back={x:bX,y:bY,w:bW,h:bH};
   drawNeonBtn(bX,bY,bW,bH,CFG.PK,'← BACK',11,0.85,Math.sin(t*2));
@@ -3856,7 +3925,14 @@ function drawGameOver(t) {
     ctx.fillStyle=CFG.PK; ctx.textAlign='center'; ctx.fillText('WIPEOUT',LW/2+ox,LH*0.22+3);
     ctx.fillStyle=CFG.CY; ctx.fillText('WIPEOUT',LW/2-ox,LH*0.22-2); ctx.globalAlpha=1;
   }
-  glow(CFG.PK,28); ctx.fillStyle=CFG.PK; ctx.textAlign='center';
+  const bridgeOver=(gameMode==='SLOPE_BRIDGE');
+  if (bridgeOver) {
+    for (let i=0;i<18;i++) {
+      const yy=(i*42+t*60)%LH;
+      ctx.fillStyle=`rgba(${120+i*6},${200-i*4},255,0.12)`; ctx.fillRect(0,yy,LW,2);
+    }
+  }
+  glow(bridgeOver?'#7cd6ff':CFG.PK,28); ctx.fillStyle=bridgeOver?'#7cd6ff':CFG.PK; ctx.textAlign='center';
   setFont(52,'900'); ctx.fillText('WIPEOUT',LW/2,LH*0.22);
   setFont(10,'700',"'Share Tech Mono',monospace"); noGlow();
   txt('SCORE',LW/2,LH*0.33,'rgba(255,230,0,0.55)');
@@ -3945,7 +4021,7 @@ function drawLevelsScreen(t){
     ctx.restore();
   }
 
-  const tiers=[1,5,10,15,20,25,30,35,40,45,50,60,70,80,90,100];
+  const tiers=LEVEL_TIER_STEPS;
   const gx=26,gy=110,gw=76,gh=56,gap=8;
   tiers.forEach((lv,i)=>{
     const col=i%4,row=Math.floor(i/4);
@@ -3959,8 +4035,9 @@ function drawLevelsScreen(t){
     setFont(8,'700',"'Share Tech Mono',monospace"); noGlow();
     txt(claimed?'CLAIMED':(unlocked?'UNLOCKED':'LOCKED'),x+gw/2,y+38,claimed?'#39ff14':'#b7d9ea');
   });
+  const nextTier=getNextClaimableTier();
   BTNS.levelClaim={x:26,y:LH-84,w:144,h:30};
-  drawNeonBtn(BTNS.levelClaim.x,BTNS.levelClaim.y,BTNS.levelClaim.w,BTNS.levelClaim.h,'#ffd84d',`CLAIM LV ${currentLevel()}`,9,1,Math.sin(t*2));
+  drawNeonBtn(BTNS.levelClaim.x,BTNS.levelClaim.y,BTNS.levelClaim.w,BTNS.levelClaim.h,nextTier!==null?'#ffd84d':'#4a5a66',nextTier!==null?'CLAIM NEXT TIER':'NEXT TIER LOCKED',9,1,Math.sin(t*2));
   BTNS.levelBack={x:LW-170,y:LH-84,w:144,h:30};
   drawNeonBtn(BTNS.levelBack.x,BTNS.levelBack.y,BTNS.levelBack.w,BTNS.levelBack.h,CFG.PK,'← BACK',10,1,Math.sin(t*2));
   ctx.restore();
@@ -4185,8 +4262,18 @@ let shopOffers=[],shopSelected=-1,shopScroll=0,shopViewH=0,shopContentH=0;
 const SHOP_RECTS=[];
 function minShopScroll(){ return Math.min(0, shopViewH-shopContentH); }
 function shuffleShop() {
-  const pool=[...SHOP_CATALOG].sort(()=>Math.random()-0.5);
-  shopOffers=pool.slice(0,3); shopSelected=-1; SHOP_RECTS.length=0; shopScroll=0;
+  if (gameMode==='SLOPE_BRIDGE') {
+    shopOffers=[
+      {key:'SHIELD',label:'MINI SHIELD',icon:'🛡',cost:180,desc:'30s safety shell'},
+      {key:'BOOST',label:'+10 MULTI',icon:'⚡',cost:260,desc:'Bridge score surge'},
+      {key:'MAGNET',label:'MAGNET',icon:'✦',cost:220,desc:'Pull gems & powerups'},
+      {key:'IMMUNITY',label:'IMMUNITY',icon:'🟢',cost:240,desc:'10s no-collision window'},
+    ];
+  } else {
+    const pool=[...SHOP_CATALOG].sort(()=>Math.random()-0.5);
+    shopOffers=pool.slice(0,3);
+  }
+  shopSelected=-1; SHOP_RECTS.length=0; shopScroll=0;
 }
 
 function handleShopTap(p) {
@@ -4206,14 +4293,42 @@ function drawShopScreen(t) {
   ctx.fillStyle='#000'; ctx.fillRect(0,0,LW,LH);
   drawPerspGrid(terrain.scrollY*0.3,0.05);
   ctx.save(); ctx.fillStyle='#000'; ctx.fillRect(0,0,LW,LH);
-  setFont(26,'900'); glow(CFG.CY,18); txt('STARTER POWER-UP',LW/2,46,CFG.CY);
+  setFont(26,'900'); glow(CFG.CY,18); txt(gameMode==='SLOPE_BRIDGE'?'SLOPE BRIDGE LOADOUT':'STARTER POWER-UP',LW/2,46,CFG.CY);
   setFont(11,'700'); glow(CFG.CY,10); txt(`◆ ${totalGems} GEMS`,LW/2,64,CFG.CY);
   // Game mode badge
-  const modeLabel=gameMode==='LTM'?`LTM • ${getActiveLtm().name}`:`Mode: ${gameMode}`;
+  const modeLabel=gameMode==='LTM'?`LTM • ${getActiveLtm().name}`:(gameMode==='SLOPE_BRIDGE'?'PREVIEW • SLOPE BRIDGE':`Mode: ${gameMode}`);
   setFont(9,'700'); glow(gameMode==='ADVENTURE'?CFG.GR:(gameMode==='LTM'?CFG.YL:CFG.CY),8);
-  txt(modeLabel,LW/2,80,gameMode==='ADVENTURE'?CFG.GR:(gameMode==='LTM'?CFG.YL:CFG.CY));
+  txt(modeLabel,LW/2,80,gameMode==='ADVENTURE'?CFG.GR:(gameMode==='LTM'?CFG.YL:(gameMode==='SLOPE_BRIDGE'?'#7cd6ff':CFG.CY)));
 
   SHOP_RECTS.length=0;
+  if (gameMode==='SLOPE_BRIDGE') {
+    const cardW=132,cardH=124,gap=10,startX=(LW-(cardW*2+gap))/2;
+    setFont(8,'700',"'Share Tech Mono',monospace"); noGlow(); txt('Bridge preview loadout • puzzle-first starter layout',LW/2,102,'rgba(190,235,255,0.86)');
+    shopOffers.slice(0,4).forEach((offer,i)=>{
+      const row=Math.floor(i/2),col=i%2;
+      const cx=startX+col*(cardW+gap), cy=114+row*(cardH+10);
+      const sel=shopSelected===i; const colr=PWR_TYPES[offer.key]?.col||CFG.CY; const afford=totalGems>=offer.cost;
+      ctx.fillStyle=hexToRgba(colr,sel?0.2:0.08); ctx.fillRect(cx,cy,cardW,cardH);
+      ctx.strokeStyle=colr; ctx.lineWidth=sel?2.4:1.6; glow(colr,sel?16:8); ctx.strokeRect(cx,cy,cardW,cardH);
+      setFont(18,'900'); glow(colr,12); txt(offer.icon,cx+cardW/2,cy+28,colr);
+      setFont(9,'900'); noGlow(); txt(offer.label,cx+cardW/2,cy+48,colr);
+      setFont(7,'700',"'Share Tech Mono',monospace"); noGlow(); txt(offer.desc,cx+cardW/2,cy+64,'rgba(215,245,255,0.88)');
+      drawNeonBtn(cx+10,cy+cardH-30,cardW-20,22,afford?CFG.YL:'#3a88ff',`◆ ${offer.cost}`,8,1,Math.sin(t*2+i));
+      SHOP_RECTS.push({x:cx,y:cy,w:cardW,h:cardH});
+    });
+    const hasSelection=shopSelected>=0;
+    const selOffer=hasSelection?shopOffers[shopSelected]:null;
+    const canAffordSel=selOffer&&totalGems>=selOffer.cost;
+    const btnY=LH*0.68,btnW=220,btnH=42,btnX=(LW-btnW)/2;
+    BTNS.start={x:btnX,y:btnY,w:btnW,h:btnH};
+    drawNeonBtn(btnX,btnY,btnW,btnH,hasSelection?(canAffordSel?'#7cd6ff':'#3a88ff'):'#2c6b88',hasSelection?(canAffordSel?`START BRIDGE -${selOffer.cost}◆`:`LOCKED ${selOffer.cost}◆`):'SELECT A BRIDGE STARTER',10,1,Math.sin(t*2.5));
+    const skipY=btnY+48; BTNS.shopSkip={x:btnX,y:skipY,w:btnW,h:30};
+    drawNeonBtn(btnX,skipY,btnW,30,CFG.PU,'SKIP — FREE START',9,0.7,Math.sin(t*1.7));
+    BTNS.shopBack={x:(LW-140)/2,y:skipY+40,w:140,h:28};
+    drawNeonBtn(BTNS.shopBack.x,BTNS.shopBack.y,140,28,CFG.PK,'← BACK',9,0.85,0);
+    ctx.restore();
+    return;
+  }
   const cardW=116,cardH=158,gap=7;
   const totalW=cardW*3+gap*2,startX=(LW-totalW)/2;
   const viewTop=88,viewBottom=LH-10;
@@ -4221,7 +4336,7 @@ function drawShopScreen(t) {
   shopContentH=330;
   shopScroll=clamp(shopScroll,minShopScroll(),0);
   setFont(8,'400',"'Share Tech Mono',monospace"); noGlow();
-  const modeHint=gameMode==='ENDLESS'?'Classic score chase with balanced spawn rates':(gameMode==='ADVENTURE'?'Stage ramp mode with progression pacing':(gameMode==='IMPOSSIBLE'?'One life only. No starter safety net.':`Special rules: ${(getActiveLtm().desc||'LTM active').slice(0,42)}`));
+  const modeHint=gameMode==='ENDLESS'?'Classic score chase with balanced spawn rates':(gameMode==='ADVENTURE'?'Stage ramp mode with progression pacing':(gameMode==='IMPOSSIBLE'?'One life only. No starter safety net.':(gameMode==='SLOPE_BRIDGE'?'Preview puzzle lane mode with bridge/rotation mechanics':`Special rules: ${(getActiveLtm().desc||'LTM active').slice(0,42)}`)));
   txt(modeHint,LW/2,92,'rgba(220,235,255,0.8)');
   ctx.save();
   if (typeof clipRect==='function') clipRect(0,viewTop,LW,shopViewH);
@@ -4518,6 +4633,14 @@ function totalXpForLevel(level){ let t=0; for (let i=1;i<level;i++) t+=xpRequire
 function levelFromXp(xp){ let lvl=1, cur=Math.max(0,Number(xp)||0); while (lvl<MAX_LEVEL){ const need=xpRequiredForLevel(lvl); if (cur<need) break; cur-=need; lvl++; } return lvl; }
 function currentLevel(){ return levelFromXp(levelXp); }
 function levelProgress(){ const lvl=currentLevel(); if (lvl>=MAX_LEVEL) return {lvl,cur:xpRequiredForLevel(MAX_LEVEL),need:xpRequiredForLevel(MAX_LEVEL),pct:1}; const base=totalXpForLevel(lvl); const cur=Math.max(0,levelXp-base); const need=xpRequiredForLevel(lvl); return {lvl,cur,need,pct:clamp(cur/Math.max(1,need),0,1)}; }
+const LEVEL_TIER_STEPS=[1,5,10,15,20,25,30,35,40,45,50,60,70,80,90,100];
+function getNextClaimableTier(){
+  const lvl=currentLevel();
+  for (const tier of LEVEL_TIER_STEPS) {
+    if (lvl>=tier && !claimedLevelRewards.includes(tier)) return tier;
+  }
+  return null;
+}
 
 const LEVEL_SPECIAL_REWARDS={
   1:{title:'Starter reward pack',skin:'default'},5:{title:'Rookie Glow title'},10:{skin:'arctic'},15:{aura:'static_ring'},20:{theme:'retrowave'},
@@ -7039,11 +7162,12 @@ gs='LOADING';
 let gameMode='ENDLESS';
 let impossibleStage=0, impossibleIntroT=0, impossibleIntroDone=false;
 let score=0, bestScore=0, lives=0, maxLives=CFG.LIVES, multi=1, gemStreak=0, maxCombo=1;
-let modeScores={endless:0,adventure:0,impossible:0,ltm:0};
+let modeScores={endless:0,adventure:0,impossible:0,ltm:0,bridge:0};
 function currentModeBestScore(){
   if (gameMode==='ADVENTURE') return Number(modeScores.adventure||0);
   if (gameMode==='IMPOSSIBLE') return Number(modeScores.impossible||0);
   if (gameMode==='LTM') return Number(modeScores.ltm||0);
+  if (gameMode==='SLOPE_BRIDGE') return Number(modeScores.bridge||0);
   return Number(modeScores.endless||0);
 }
 let gemsCollected=0;
@@ -7093,6 +7217,9 @@ let leaderboardCategory='GLOBAL';
 const LEADERBOARD_TABS=['GLOBAL','ENDLESS','ADVENTURE','IMPOSSIBLE','LTM'];
 let ltmRotationIndex=0;
 let ltmStage=0, ltmStageTimer=0;
+let bridgeStage=0, bridgeStageTimer=0;
+let bridgeLaneCount=1, bridgeCurrentLayer=0, bridgeRotateMode=0, bridgeZoomOut=1, bridgeTeleportCooldown=0;
+let bridgeIntroT=0, bridgeIntroActive=false, bridgeObstacleDelay=0, bridgeWarpFx=0;
 let adminLtmScroll=0, adminLtmViewH=0, adminLtmContentH=0;
 let noAdsPopup=false;
 let adminLtmTestButtons=[];
@@ -7420,7 +7547,7 @@ const CLOUD_LTM_CONFIG='SLOPE/config/ltm';
 function minAdminLtmScroll(){ return Math.min(0, adminLtmViewH-adminLtmContentH); }
 function getDailyLtmIndex(){
   const now=new Date();
-  const key=`${now.getUTCFullYear()}-${now.getUTCMonth()+1}-${now.getUTCDate()}`;
+  const key=`${now.getFullYear()}-${now.getMonth()+1}-${now.getDate()}`;
   let h=0; for (let i=0;i<key.length;i++) h=(h*31+key.charCodeAt(i))>>>0;
   let idx=h%Math.max(1,LTM_MODES.length);
   if ((LTM_MODES[idx]&&LTM_MODES[idx].id)==='metro') idx=(idx+1)%Math.max(1,LTM_MODES.length);
@@ -7428,8 +7555,8 @@ function getDailyLtmIndex(){
 }
 function getDailyCountdown(){
   const now=new Date();
-  const end=Date.UTC(now.getUTCFullYear(),now.getUTCMonth(),now.getUTCDate()+1,0,0,0);
-  return fmtCountdownDhms(Math.max(0,end-now.getTime()));
+  const end=new Date(now.getFullYear(),now.getMonth(),now.getDate()+1,0,0,0,0);
+  return fmtCountdown(Math.max(0,end.getTime()-now.getTime()));
 }
 ltmSelectedIndex=getDailyLtmIndex();
 function getActiveLtm(){ return LTM_MODES[clamp(ltmRotationIndex,0,LTM_MODES.length-1)]||LTM_MODES[0]; }
@@ -7603,7 +7730,7 @@ function goMenu() {
   gems.length=0; powerups.length=0; obstacles.length=0;
   transDir=1; transAlpha=1;
   activePwr=null; pwrTimer=0; worldSpeedMult=1;
-  immunityActive=false; immunityTimer=0; obstacleClearTimer=0; badLuckActive=false; badLuckTimer=0; badLuckSpawnT=0; gemDoubleActive=false; gemDoubleTimer=0; gemBoostMult=1; gemDropActive=false; gemDropTimer=0; gemDropSpawnTimer=0;
+  immunityActive=false; immunityTimer=0; obstacleClearTimer=0; badLuckActive=false; badLuckTimer=0; badLuckSpawnT=0; gemDoubleActive=false; gemDoubleTimer=0; gemBoostMult=1; gemDropActive=false; gemDropTimer=0; gemDropSpawnTimer=0; bridgeStage=0; bridgeStageTimer=0; bridgeLaneCount=1; bridgeCurrentLayer=0; bridgeRotateMode=0; bridgeZoomOut=1; bridgeTeleportCooldown=0; bridgeIntroT=0; bridgeIntroActive=false; bridgeObstacleDelay=0; bridgeWarpFx=0;
   pauseToggleLock=0;
   continueOfferTimer=0;
   shuffleShop();
@@ -7623,9 +7750,9 @@ function startGame(starterPwr=null, forceNoStarter=false) {
   obsTimer=0; obsNext=rnd(...CFG.OBS_INT);
   lastMilestone=0; clusterTimer=0; clusterNext=8;
   jetpackCount=0; regenUsed=0;
-  pwrCounts={JETPACK:0,MAGNET:0,BOOST:0,SHIELD:0,SLOW:0,HEALTH_BOOST:0,MINI_JETPACK:0,NEW_STAGE:0,REGEN:0,X2_GEMS:0,X4_GEMS:0,GEM_DROP:0,BAD_LUCK:0,SICK:0,LTM_SPECIAL:0};
+  pwrCounts={JETPACK:0,MAGNET:0,BOOST:0,SHIELD:0,SLOW:0,HEALTH_BOOST:0,MINI_JETPACK:0,NEW_STAGE:0,REGEN:0,X2_GEMS:0,X4_GEMS:0,GEM_DROP:0,BAD_LUCK:0,SICK:0,LTM_SPECIAL:0,ROTATION:0,BRIDGE:0};
   // Adventure setup
-  adventureStage=0; adventureStageTimer=0; impossibleStage=0; ltmStage=0; ltmStageTimer=0;
+  adventureStage=0; adventureStageTimer=0; impossibleStage=0; ltmStage=0; ltmStageTimer=0; bridgeStage=0; bridgeStageTimer=0; bridgeLaneCount=1; bridgeCurrentLayer=0; bridgeRotateMode=0; bridgeZoomOut=1; bridgeTeleportCooldown=0; bridgeIntroT=0; bridgeIntroActive=false; bridgeObstacleDelay=0; bridgeWarpFx=0;
   if (gameMode==='LTM') {
     if (!navigator.onLine) { addNotif('LTM REQUIRES INTERNET',CFG.PK); gameMode='ENDLESS'; }
     const picked=(ltmSelectedIndex>=0?ltmSelectedIndex:getDailyLtmIndex());
@@ -7656,6 +7783,11 @@ function startGame(starterPwr=null, forceNoStarter=false) {
     const st=IMP_STAGES[0];
     terrain.speed=st.spd;
   }
+  if (gameMode==='SLOPE_BRIDGE') {
+    const st=BRIDGE_STAGES[0];
+    terrain.speed=st.spd;
+    bridgeIntroActive=true; bridgeIntroT=0; bridgeObstacleDelay=4.5;
+  }
   transDir=1; transAlpha=1;
 
 
@@ -7673,6 +7805,10 @@ function startGame(starterPwr=null, forceNoStarter=false) {
       setTimeout(()=>{ if(gs==='PLAY'){ player.activateJetpack(10.0); worldSpeedMult=1.3; }},200);
     } else if (starterPwr==='HEALTH_BOOST') {
       activateHealthBoost(healthBoostDuration(60));
+    } else if (starterPwr==='ROTATION') {
+      bridgeRotateMode=(bridgeRotateMode+1)%4; bridgeWarpFx=1;
+    } else if (starterPwr==='BRIDGE') {
+      bridgeLaneCount=Math.min(3,bridgeLaneCount+1); bridgeCurrentLayer=Math.max(0,bridgeLaneCount-1); terrain.trackW=Math.min(LW*0.82,terrain.trackW+32);
     } else {
       activePwr=starterPwr; pwrTimer=PWR_TYPES[starterPwr]?.dur||5;
       if (starterPwr==='SLOW') worldSpeedMult=0.42;
@@ -7748,6 +7884,64 @@ function advanceLtmStage() {
   addRing(LW/2,LH/2,m.cardCol||CFG.YL,180,280,3);
 }
 
+
+function advanceBridgeStage() {
+  if (bridgeStage>=BRIDGE_STAGES.length-1) {
+    stageTransLabel='STAGE 8 · EXTREME'; stageTransT=3.0; addNotif('SLOPE BRIDGE MAX STAGE!', '#7cd6ff'); return;
+  }
+  bridgeStage++;
+  const st=BRIDGE_STAGES[bridgeStage];
+  bridgeStageTimer=0;
+  terrain.speed=Math.max(terrain.speed,st.spd||terrain.speed);
+  stageTransLabel=`${st.name} · ${st.label}`;
+  stageTransT=3.0;
+  addNotif(`⬆ BRIDGE ${st.name} — ${st.label}`, '#7cd6ff');
+  addRing(LW/2,LH/2,'#7cd6ff',180,280,3);
+  if (st.badLuck && Math.random()<0.35) activateBadLuck();
+}
+
+function triggerBridgeWarp(){
+  bridgeTeleportCooldown=14;
+  bridgeWarpFx=1.0;
+  addNotif('WARP LINE: TELEPORT IN', '#ff9acc');
+  setTimeout(()=>{
+    if (gs!=='PLAY' || gameMode!=='SLOPE_BRIDGE') return;
+    player.x=clamp(rnd(56,LW-56),56,LW-56);
+    addNotif('WARP EXIT BOOST!', '#ff9acc');
+    player.activateJetpack(5.0);
+    worldSpeedMult=Math.max(worldSpeedMult,1.08);
+    bridgeLaneCount=1; bridgeCurrentLayer=0; bridgeZoomOut=1;
+  },1000);
+}
+
+function drawBridgeIntroOverlay(t){
+  if (gameMode!=='SLOPE_BRIDGE' || !bridgeIntroActive) return;
+  const box=200+30*Math.sin(t*2.4);
+  ctx.save();
+  ctx.fillStyle='rgba(0,0,0,0.42)'; ctx.fillRect(0,0,LW,LH);
+  ctx.translate(LW/2,LH*0.32); ctx.rotate(t*1.7);
+  ctx.strokeStyle='#7cd6ff'; ctx.lineWidth=3; glow('#7cd6ff',14); ctx.strokeRect(-box/2,-box/2,box,box);
+  ctx.restore();
+  setFont(24,'900'); glow('#7cd6ff',16); txt('WELCOME TO SLOPE BRIDGE',LW/2,LH*0.28,'#7cd6ff');
+  if (bridgeIntroT>=1) { setFont(10,'700',"'Share Tech Mono',monospace"); noGlow(); txt('Puzzle lanes • rotation shifts • warp lines',LW/2,LH*0.36,'rgba(210,240,255,0.9)'); }
+  if (bridgeIntroT>=3) {
+    const c=Math.max(0,3-Math.floor((bridgeIntroT-3)*1.15));
+    const label=c>0?String(c):'GO!';
+    setFont(44,'900'); glow('#ff9a34',18); txt(label,LW/2,LH*0.48,'#ff9a34');
+  }
+}
+
+function drawBridgeWarpLines(t){
+  if (gameMode!=='SLOPE_BRIDGE') return;
+  if (bridgeWarpFx>0.001) {
+    ctx.save();
+    const a=0.25+0.35*Math.sin(t*16);
+    ctx.fillStyle=`rgba(255,130,200,${a*bridgeWarpFx})`; ctx.fillRect(0,LH*0.46,LW,10);
+    ctx.fillStyle=`rgba(255,150,40,${a*bridgeWarpFx})`; ctx.fillRect(0,LH*0.54,LW,10);
+    ctx.restore();
+  }
+}
+
 function advanceImpossibleStage() {
   if (impossibleStage>=IMP_STAGES.length-1) {
     stageTransLabel='STAGE 4 · THE IMPOSSIBLE CHALLENGE!';
@@ -7768,7 +7962,7 @@ function togglePause() {
   const now=performance.now();
   if (now<pauseToggleLock) return;
   pauseToggleLock=now+110;
-  if (gs==='PLAY') { gs='PAUSE'; pauseStartedAt=performance.now(); SFX.pause(); }
+  if (gs==='PLAY' && !(gameMode==='SLOPE_BRIDGE' && (bridgeIntroT<4.0 || bridgeObstacleDelay>0))) { gs='PAUSE'; pauseStartedAt=performance.now(); SFX.pause(); }
   else if (gs==='PAUSE') {
     const nowPerf=performance.now();
     lastTime=nowPerf;
@@ -7822,7 +8016,8 @@ function finalizeGameOver() {
   if (gameMode==='ADVENTURE') modeScores.adventure=Math.max(modeScores.adventure||0,score);
   if (gameMode==='IMPOSSIBLE') modeScores.impossible=Math.max(modeScores.impossible||0,score);
   if (gameMode==='LTM') modeScores.ltm=Math.max(modeScores.ltm||0,score);
-  gainXP(Math.floor(gameTime*1.2) + Math.floor(score/220) + Math.floor(Math.max(0,maxCombo-1)*22) + (gameMode==='IMPOSSIBLE'?90:(gameMode==='LTM'?70:40)),'run_end');
+  if (gameMode==='SLOPE_BRIDGE') modeScores.bridge=Math.max(modeScores.bridge||0,score);
+  gainXP(Math.floor(gameTime*1.2) + Math.floor(score/220) + Math.floor(Math.max(0,maxCombo-1)*22) + (gameMode==='IMPOSSIBLE'?90:((gameMode==='LTM'||gameMode==='SLOPE_BRIDGE')?70:40)),'run_end');
   const runs=parseInt(localStorage.getItem('slope_runs')||'0',10)+1;
   const total=parseFloat(localStorage.getItem('slope_totalTime')||'0')+Math.max(0,gameTime);
   localStorage.setItem('slope_runs',String(runs));
@@ -7898,7 +8093,9 @@ function collectGem(gem) {
   burst(gem.x,gem.y,gem.type.col,12,180);
   flashAlpha=0.12; flashCol=gem.type.col;
   addFloat(gem.x,gem.y-10,`+${pts}${scoreMultiplier()>1?` ×${scoreMultiplier()}`:''}`,gem.type.col);
+  const xpEarn=Math.max(1,2 + Math.floor(earned*0.8));
   addFloat(gem.x,gem.y-28,`+${earned}◆${gemDoubleActive?`  X${Math.max(2,gemBoostMult)}`:''}`,gem.type.col);
+  addFloat(gem.x,gem.y-42,`+${xpEarn} XP`,'#ffe792');
 }
 
 function collectPwr(pwr) {
@@ -7914,7 +8111,9 @@ function collectPwr(pwr) {
   else if (pwr.key==='HEALTH_BOOST') { SFX.regen(); activateHealthBoost(healthBoostDuration(30)); pwrCounts.HEALTH_BOOST++; }
   else if (pwr.key==='REGEN')        { SFX.regen(); collectRegen(pwr.x,pwr.y); pwrCounts.REGEN++; }
   else if (pwr.key==='MINI_JETPACK') { SFX.jetpack(); activateMiniJetpack(); pwrCounts.MINI_JETPACK++; }
-  else if (pwr.key==='NEW_STAGE')    { if (newStageActive) return; SFX.stage(); activateNewStagePowerup(); pwrCounts.NEW_STAGE++; }
+  else if (pwr.key==='ROTATION')     { SFX.stage(); bridgeRotateMode=(bridgeRotateMode+1)%4; bridgeWarpFx=1.0; pwrCounts.ROTATION++; stageTransLabel='ROTATION SHIFT'; stageTransT=1.4; addNotif('BRIDGE ROTATION SHIFT!','#7cd6ff'); }
+  else if (pwr.key==='BRIDGE')       { SFX.stage(); bridgeLaneCount=Math.min(3,bridgeLaneCount+1); bridgeCurrentLayer=Math.max(0,bridgeLaneCount-1); bridgeZoomOut=1+bridgeLaneCount*0.06; terrain.trackW=Math.min(LW*0.82,terrain.trackW+32); pwrCounts.BRIDGE++; addNotif(`BRIDGE EXPANDED x${bridgeLaneCount}`,'#ff9a34'); }
+  else if (pwr.key==='NEW_STAGE')    { if (newStageActive) return; SFX.stage(); if (gameMode==='SLOPE_BRIDGE') { advanceBridgeStage(); } else activateNewStagePowerup(); pwrCounts.NEW_STAGE++; }
   else if (pwr.key==='X2_GEMS')      { SFX.pwr(); activateGemDouble(2,10); pwrCounts.X2_GEMS++; }
   else if (pwr.key==='X4_GEMS')      { SFX.pwr(); activateGemDouble(4,8); pwrCounts.X2_GEMS++; }
   else if (pwr.key==='SICK')         { SFX.stage(); applyRandomSickPower(); }
@@ -7925,7 +8124,7 @@ function collectPwr(pwr) {
   burst(pwr.x,pwr.y,col,24,220); ringBurst(pwr.x,pwr.y,col);
   gainXP(28,'powerup');
   addShake(6,0.2); flashAlpha=0.35; flashCol=col;
-  if (pwr.key!=='HEALTH_BOOST'&&pwr.key!=='REGEN'&&pwr.key!=='MINI_JETPACK'&&pwr.key!=='NEW_STAGE'&&pwr.key!=='X2_GEMS'&&pwr.key!=='X4_GEMS'&&pwr.key!=='SICK'&&pwr.key!=='LTM_SPECIAL'&&pwr.key!=='GEM_DROP'&&pwr.key!=='BAD_LUCK'&&pwr.key!=='IMMUNITY') {
+  if (pwr.key!=='HEALTH_BOOST'&&pwr.key!=='REGEN'&&pwr.key!=='MINI_JETPACK'&&pwr.key!=='NEW_STAGE'&&pwr.key!=='X2_GEMS'&&pwr.key!=='X4_GEMS'&&pwr.key!=='SICK'&&pwr.key!=='LTM_SPECIAL'&&pwr.key!=='GEM_DROP'&&pwr.key!=='BAD_LUCK'&&pwr.key!=='IMMUNITY'&&pwr.key!=='ROTATION'&&pwr.key!=='BRIDGE') {
     addNotif(`${pwr.info.label} ACTIVATED!`,col);
     addFloat(pwr.x,pwr.y-16,pwr.info.icon+' '+pwr.info.label,col);
   }
@@ -8112,9 +8311,9 @@ function drawLtmModeFx(lm,t){
 }
 
 function activateBadLuck() {
-  if (gameMode!=='IMPOSSIBLE') return;
+  if (gameMode!=='IMPOSSIBLE' && gameMode!=='SLOPE_BRIDGE') return;
   badLuckActive=true; badLuckTimer=5.0; badLuckSpawnT=0;
-  addNotif('☠ BAD LUCK! FALLING ROCKS','#ff3333');
+  addNotif(gameMode==='SLOPE_BRIDGE'?'☠ BAD LUCK! BRIDGE PEBBLES':'☠ BAD LUCK! FALLING ROCKS','#ff3333');
   addFloat(player.x,player.y-24,'☠ BAD LUCK','#ff3333');
 }
 
@@ -8171,14 +8370,14 @@ function spawnObjects(dt) {
 
   // Obstacles (mode-aware)
   const stage=currentStageConfig();
-  const obsOff=((gameMode==='ADVENTURE'||gameMode==='LTM')&&stage.obsOff);
-  if (!obsOff&&obstacleClearTimer<=0) {
+  const obsOff=((gameMode==='ADVENTURE'||gameMode==='LTM'||gameMode==='SLOPE_BRIDGE')&&stage.obsOff);
+  if (!obsOff&&obstacleClearTimer<=0 && !(gameMode==='SLOPE_BRIDGE'&&bridgeObstacleDelay>0)) {
     const obsThresh=Math.max(60,CFG.OBS_THRESH-gameTime*8);
     if (score>=obsThresh) {
       obsTimer+=dt;
       if (obsTimer>=obsNext) {
         obsTimer=0;
-        const oi=(gameMode==='ADVENTURE'||gameMode==='LTM')?(stage.obsInt||[3.0,5.0]):CFG.OBS_INT;
+        const oi=(gameMode==='ADVENTURE'||gameMode==='LTM'||gameMode==='SLOPE_BRIDGE')?(stage.obsInt||[3.0,5.0]):CFG.OBS_INT;
         const minI=Math.max(1.4,oi[0]-gameTime*0.02);
         const maxI=Math.max(2.5,oi[1]-gameTime*0.04);
         obsNext=rnd(minI,maxI);
@@ -8538,6 +8737,17 @@ function loop(ts) {
   // ── PLAY ────────────────────────────────────────────────────
   const wdt=dt*worldSpeedMult;
   gameTime+=dt;
+  if (gameMode==='SLOPE_BRIDGE') {
+    bridgeStageTimer+=dt;
+    bridgeTeleportCooldown=Math.max(0,bridgeTeleportCooldown-dt);
+    bridgeWarpFx=Math.max(0,bridgeWarpFx-dt*0.8);
+    if (bridgeIntroActive) { bridgeIntroT+=dt; if (bridgeIntroT>=6.2) bridgeIntroActive=false; }
+    bridgeObstacleDelay=Math.max(0,bridgeObstacleDelay-dt);
+    const st=currentStageConfig();
+    if (st && Number(st.duration||0)>0 && bridgeStageTimer>=st.duration && canAdvanceStage()) advanceBridgeStage();
+    if (bridgeTeleportCooldown<=0 && bridgeStage>=2 && Math.random()<0.0026) triggerBridgeWarp();
+    if ((bridgeStage===3||bridgeStage===4) && !badLuckActive && Math.random()<0.0016) activateBadLuck();
+  }
   if (gameMode==='IMPOSSIBLE' && impossibleStage>=2) { gemDoubleActive=true; gemBoostMult=2; gemDoubleTimer=999; }
 
   // Active powerup countdown
@@ -8590,7 +8800,7 @@ function loop(ts) {
 
   if (obstacleClearTimer>0) obstacleClearTimer=Math.max(0,obstacleClearTimer-dt);
 
-  if (badLuckActive && gameMode!=='IMPOSSIBLE') { badLuckActive=false; badLuckTimer=0; }
+  if (badLuckActive && gameMode!=='IMPOSSIBLE' && !(gameMode==='SLOPE_BRIDGE' && (bridgeStage===3||bridgeStage===4))) { badLuckActive=false; badLuckTimer=0; }
   if (badLuckActive) {
     badLuckTimer-=dt; badLuckSpawnT-=dt;
     if (badLuckSpawnT<=0) {
@@ -8598,6 +8808,7 @@ function loop(ts) {
       const count=Math.random()<0.22?2:1;
       for (let i=0;i<count;i++) {
         const o=new FallingRock(terrain);
+        if (gameMode==='SLOPE_BRIDGE') { o.r=Math.max(4,Math.min(7,o.r*0.52)); o.col='#9bb3c7'; }
         if (count>1) o.x=clamp(o.x+(i===0?-42:42),24,LW-24);
         obstacles.push(o);
       }
@@ -8631,6 +8842,7 @@ function loop(ts) {
       activateImmunity(3.0);
       if (gameMode==='IMPOSSIBLE') advanceImpossibleStage();
       else if (gameMode==='LTM') advanceLtmStage();
+      else if (gameMode==='SLOPE_BRIDGE') advanceBridgeStage();
       else advanceAdventureStage();
     }
   }
@@ -8653,7 +8865,7 @@ function loop(ts) {
   }
   updateParticles(dt); updateRings(dt);
   updateFloats(dt); updateNotifs(dt); updateObjAnims(dt);
-  spawnObjects(dt);
+  if (!(gameMode==='SLOPE_BRIDGE' && bridgeIntroT<4.0)) spawnObjects(dt);
   tickObjectives();
 
   // Magnet: very intense pull
@@ -8708,9 +8920,15 @@ function loop(ts) {
 
   // ── DRAW ────────────────────────────────────────────────────
   if (player.jetpackActive) addShake(2.4,0.05);
-  const targetZoom=(miniJetpackActive||newStageActive)?1.08:(player.jetpackActive?1.04:1);
-  camZoom=lerp(camZoom,targetZoom,dt*3);
+  const baseZoom=(miniJetpackActive||newStageActive)?1.08:(player.jetpackActive?1.04:1);
+  const bridgeZoomTarget=(gameMode==='SLOPE_BRIDGE')?(baseZoom/Math.max(1,bridgeZoomOut)):baseZoom;
+  camZoom=lerp(camZoom,bridgeZoomTarget,dt*3);
   ctx.save(); applyShake();
+  const bridgeIntroRot=(gameMode==='SLOPE_BRIDGE'&&bridgeIntroActive&&bridgeIntroT<3)?(-Math.PI/2):0;
+  const bridgeTargetRot=bridgeIntroRot + (gameMode==='SLOPE_BRIDGE'?(bridgeRotateMode*(Math.PI/2)):0);
+  if (gameMode==='SLOPE_BRIDGE') bridgeZoomOut=lerp(bridgeZoomOut,1+Math.max(0,bridgeLaneCount-1)*0.08,dt*2);
+  const bridgeViewOffsetY=(gameMode==='SLOPE_BRIDGE' && bridgeTargetRot!==0)?LH*0.12:0;
+  if (bridgeTargetRot!==0) { ctx.translate(LW/2,LH/2+bridgeViewOffsetY); ctx.rotate(bridgeTargetRot); ctx.translate(-LW/2,-LH/2); }
   if (camZoom!==1) {
     ctx.translate(player.x,player.y);
     ctx.scale(camZoom,camZoom);
@@ -8731,6 +8949,7 @@ function loop(ts) {
   ctx.restore();
 
   if (gameMode==='LTM') drawLtmModeFx(getActiveLtm(),menuT);
+  if (gameMode==='SLOPE_BRIDGE') drawBridgeWarpLines(menuT);
 
   const hideImpossibleVfx = (transDir===0 && transAlpha<1);
   if (gameMode==='IMPOSSIBLE' && (gs==='PLAY'||gs==='PAUSE'||gs==='CONTINUE') && !hideImpossibleVfx) {
@@ -8767,6 +8986,7 @@ function loop(ts) {
     ctx.restore();
   }
   drawJetpackFog();
+  if (gameMode==='SLOPE_BRIDGE') drawBridgeIntroOverlay(menuT);
   drawFlash();
   drawHUD();
   drawObjectivesPanel();
