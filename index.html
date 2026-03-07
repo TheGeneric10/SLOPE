@@ -104,6 +104,7 @@ const SUPPORTED_VERSIONS = ['1.0.0','pre-1.0.0 (patch_03052026)'];
 const SEASON_LIVE='SEASON 1';
 const SEASON_NEXT='SEASON 2';
 const SEASON_NEXT_RELEASE='Sunday, April 5, 2026';
+const SEASON_NEXT_RELEASE_TS=(()=>{ const p=Date.parse(SEASON_NEXT_RELEASE); return Number.isFinite(p)?p:Date.parse('2026-04-05T00:00:00Z'); })();
 
 // Adventure stage configs
 const ADV_STAGES = [
@@ -3036,11 +3037,12 @@ function drawStartScreen(t) {
   txt(SEASON_LIVE,LW/2+seasonScrollX,titleY+34,'rgba(0,245,255,0.8)');
   setFont(11,'400',"'Share Tech Mono',monospace"); glow(CFG.CY,8);
   txt(`${SEASON_NEXT} • ${SEASON_NEXT_RELEASE}`,LW/2,titleY+50,'rgba(0,245,255,0.7)');
-  txt(`VERSION ${VERSION}`,LW/2,titleY+64,'rgba(0,245,255,0.35)');
+  txt(`SEASONAL LIVE EVENT IN ${getSeasonCountdown()}`,LW/2,titleY+64,'rgba(255,230,120,0.78)');
+  txt(`VERSION ${VERSION}`,LW/2,titleY+78,'rgba(0,245,255,0.35)');
 
   // Divider
   ctx.save();
-  const lw2=120,lx2=(LW-lw2)/2,ly=titleY+78;
+  const lw2=120,lx2=(LW-lw2)/2,ly=titleY+92;
   const dg=ctx.createLinearGradient(lx2,0,lx2+lw2,0);
   dg.addColorStop(0,'transparent'); dg.addColorStop(0.5,CFG.CY); dg.addColorStop(1,'transparent');
   ctx.strokeStyle=dg; ctx.lineWidth=1; glow(CFG.CY,8);
@@ -5049,12 +5051,20 @@ function fmtCountdown(ms){
   const m=Math.floor(v/60); const sec=v-m*60;
   return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
 }
+function fmtCountdownDhms(ms){
+  let v=Math.max(0,Math.floor(ms/1000));
+  const d=Math.floor(v/86400); v-=d*86400;
+  const h=Math.floor(v/3600); v-=h*3600;
+  const m=Math.floor(v/60); const sec=v-m*60;
+  return `${d}d ${String(h).padStart(2,'0')}h ${String(m).padStart(2,'0')}m ${String(sec).padStart(2,'0')}s`;
+}
+function getSeasonCountdown(){ return fmtCountdownDhms(Math.max(0,SEASON_NEXT_RELEASE_TS-Date.now())); }
 function shopCountdownHour(){ const now=new Date(); const next=new Date(now); next.setMinutes(60,0,0); return fmtCountdown(next-now); }
 function shopCountdownDaily(){
   const now=new Date();
   const next=new Date(now.getFullYear(),now.getMonth(),now.getDate(),20,0,0,0);
   if (next<=now) next.setDate(next.getDate()+1);
-  return fmtCountdown(next-now);
+  return fmtCountdownDhms(next-now);
 }
 
 function drawCharShop(t) {
@@ -7419,11 +7429,7 @@ function getDailyLtmIndex(){
 function getDailyCountdown(){
   const now=new Date();
   const end=Date.UTC(now.getUTCFullYear(),now.getUTCMonth(),now.getUTCDate()+1,0,0,0);
-  let ms=Math.max(0,end-now.getTime());
-  const h=Math.floor(ms/3600000); ms-=h*3600000;
-  const m=Math.floor(ms/60000); ms-=m*60000;
-  const s=Math.floor(ms/1000);
-  return `${String(h).padStart(2,'0')}h:${String(m).padStart(2,'0')}m:${String(s).padStart(2,'0')}s`;
+  return fmtCountdownDhms(Math.max(0,end-now.getTime()));
 }
 ltmSelectedIndex=getDailyLtmIndex();
 function getActiveLtm(){ return LTM_MODES[clamp(ltmRotationIndex,0,LTM_MODES.length-1)]||LTM_MODES[0]; }
