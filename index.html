@@ -653,7 +653,7 @@ function drawPlayerCardPopup(t){
   const status=getStatusValue();
   ctx.save();
   ctx.fillStyle='rgba(0,0,0,0.74)'; ctx.fillRect(0,0,LW,LH);
-  const w=322,h=250,x=(LW-w)/2,y=(LH-h)/2;
+  const w=322,h=262,x=(LW-w)/2,y=(LH-h)/2;
   ctx.fillStyle='rgba(5,12,18,0.98)'; ctx.fillRect(x,y,w,h);
   ctx.strokeStyle='rgba(0,245,255,0.45)'; ctx.lineWidth=2; glow(CFG.CY,12); ctx.strokeRect(x,y,w,h);
   BTNS.playerCardClose={x:x+w-34,y:y+8,w:24,h:24};
@@ -665,27 +665,27 @@ function drawPlayerCardPopup(t){
     if (playerCardPopup.lite) {
       BTNS.playerCardEdit=null; BTNS.playerCardFav=null; BTNS.playerCardFind=null;
     } else {
-      BTNS.playerCardEdit={x:x+10,y:y+10,w:56,h:24};
-      BTNS.playerCardFav={x:x+72,y:y+10,w:28,h:24};
-      BTNS.playerCardFind={x:x+106,y:y+10,w:56,h:24};
-      drawNeonBtn(BTNS.playerCardEdit.x,BTNS.playerCardEdit.y,56,24,CFG.CY,'EDIT',8,1,0);
-      drawNeonBtn(BTNS.playerCardFav.x,BTNS.playerCardFav.y,28,24,playerCardPopup.favorite?'#ff9a1a':CFG.YL,playerCardPopup.favorite?'★':'☆',10,1,0);
-      drawNeonBtn(BTNS.playerCardFind.x,BTNS.playerCardFind.y,56,24,CFG.GR,'FIND',8,1,0);
+      BTNS.playerCardEdit={x:x+10,y:y+10,w:62,h:24};
+      BTNS.playerCardFav={x:x+78,y:y+10,w:30,h:24};
+      BTNS.playerCardFind={x:x+114,y:y+10,w:62,h:24};
+      drawNeonBtn(BTNS.playerCardEdit.x,BTNS.playerCardEdit.y,62,24,CFG.CY,'EDIT',8,1,0);
+      drawNeonBtn(BTNS.playerCardFav.x,BTNS.playerCardFav.y,30,24,playerCardPopup.favorite?'#ff9a1a':CFG.YL,playerCardPopup.favorite?'★':'☆',10,1,0);
+      drawNeonBtn(BTNS.playerCardFind.x,BTNS.playerCardFind.y,62,24,CFG.GR,'FIND',8,1,0);
     }
   } else {
     BTNS.playerCardEdit=null; BTNS.playerCardFind=null;
-    BTNS.playerCardFav={x:x+146,y:y+10,w:28,h:24};
-    BTNS.playerCardFollow={x:x+180,y:y+10,w:74,h:24};
+    BTNS.playerCardFav={x:x+132,y:y+10,w:30,h:24};
+    BTNS.playerCardFollow={x:x+168,y:y+10,w:88,h:24};
     BTNS.playerCardUnfriend=null;
     let actionLabel='ADD FRIEND';
     let actionCol=CFG.GR;
     if (rel.incoming) { actionLabel='VIEW FRIEND REQUEST'; actionCol=CFG.YL; }
     else if (rel.outgoing) { actionLabel='CANCEL FRIEND REQUEST'; actionCol=CFG.PK; }
     else if (rel.friend) { actionLabel='FRIEND'; actionCol=CFG.CY; }
-    BTNS.playerCardAdd={x:x+10,y:y+10,w:130,h:24};
-    drawNeonBtn(BTNS.playerCardAdd.x,BTNS.playerCardAdd.y,130,24,actionCol,actionLabel,7,1,Math.sin(t*2));
-    drawNeonBtn(BTNS.playerCardFav.x,BTNS.playerCardFav.y,28,24,rel.favorite?'#ff9a1a':CFG.YL,rel.favorite?'★':'☆',10,1,0);
-    drawNeonBtn(BTNS.playerCardFollow.x,BTNS.playerCardFollow.y,74,24,rel.following?CFG.PK:CFG.CY,rel.following?'UNFOLLOW':'FOLLOW',8,1,0);
+    BTNS.playerCardAdd={x:x+10,y:y+10,w:116,h:24};
+    drawNeonBtn(BTNS.playerCardAdd.x,BTNS.playerCardAdd.y,116,24,actionCol,actionLabel,7,1,Math.sin(t*2));
+    drawNeonBtn(BTNS.playerCardFav.x,BTNS.playerCardFav.y,30,24,rel.favorite?'#ff9a1a':CFG.YL,rel.favorite?'★':'☆',10,1,0);
+    drawNeonBtn(BTNS.playerCardFollow.x,BTNS.playerCardFollow.y,88,24,rel.following?CFG.PK:CFG.CY,rel.following?'UNFOLLOW':'FOLLOW',8,1,0);
     if (rel.friend && playerCardFriendMenu.open) {
       const mx=x+10,my=y+38,mw=130,mh=50;
       ctx.fillStyle='rgba(0,0,0,0.92)'; ctx.fillRect(mx,my,mw,mh);
@@ -699,7 +699,7 @@ function drawPlayerCardPopup(t){
   }
 
   const name=String((playerCardPopup.isSelf?(auth&&auth.name):cardUser.name)||'Player');
-  const pfpX=x+w-48, pfpY=y+58, r=22;
+  const pfpX=x+w-48, pfpY=y+68, r=22;
   const cardAvatar=playerCardPopup.isSelf?String(profileAvatar||''):String(cardUser.avatar||'');
   if (cardAvatar) {
     const img=new Image(); img.src=cardAvatar;
@@ -2333,6 +2333,10 @@ function randPwrKey() {
     if (adventureStage>=5 && Math.random()<0.28) return 'MINI_JETPACK';
     pool=pool.filter(k=>k!=='BAD_LUCK');
     return pool[rndI(0,pool.length-1)];
+  }
+
+  if (gameMode==='NEON_RUSH') {
+    return 'SICK';
   }
 
   if (gameMode==='LTM') {
