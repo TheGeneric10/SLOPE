@@ -2717,18 +2717,23 @@ function drawHUD() {
   setFont(22,'900'); glow(CFG.CY,14); txt(`${Math.floor(score)}${multiStr}`,0,22,CFG.CY);
   ctx.restore();
 
-  // Gem bank
+  // EXP + Gem bank
   {
-    const gbW=112, gbH=18, gbX=(LW-gbW)/2, gbY=pdY+42;
+    const xpVal=Math.floor(Math.max(0,Number(levelXp||0)));
+    const gbW=196, gbH=18, gbX=(LW-gbW)/2, gbY=pdY+42;
     ctx.save();
     ctx.fillStyle='rgba(0,245,255,0.06)'; ctx.fillRect(gbX,gbY,gbW,gbH);
     ctx.strokeStyle='rgba(0,245,255,0.35)'; ctx.lineWidth=1; glow(CFG.CY,6); ctx.strokeRect(gbX,gbY,gbW,gbH);
+    setFont(8,'700',"'Share Tech Mono',monospace"); noGlow();
+    txt('XP',gbX+12,gbY+13,'#ffe792','left');
+    setFont(9,'900'); glow('#ffe792',8); txt(`${xpVal}`,gbX+28,gbY+13,'#ffe792','left');
+    setFont(7,'700',"'Share Tech Mono',monospace"); noGlow(); txt('|',gbX+94,gbY+13,'rgba(180,230,255,0.55)','left');
     ctx.fillStyle=CFG.CY;
     ctx.beginPath();
-    ctx.moveTo(gbX+12,gbY+3); ctx.lineTo(gbX+16,gbY+9); ctx.lineTo(gbX+12,gbY+15); ctx.lineTo(gbX+8,gbY+9);
+    ctx.moveTo(gbX+108,gbY+3); ctx.lineTo(gbX+112,gbY+9); ctx.lineTo(gbX+108,gbY+15); ctx.lineTo(gbX+104,gbY+9);
     ctx.closePath();
     ctx.fill();
-    setFont(9,'900'); glow(CFG.CY,8); txt(`${totalGems}`,gbX+24,gbY+13,CFG.CY,'left');
+    setFont(9,'900'); glow(CFG.CY,8); txt(`${totalGems}`,gbX+120,gbY+13,CFG.CY,'left');
     setFont(7,'700',"'Share Tech Mono',monospace"); noGlow();
     txt(`+${gemsCollected}`,gbX+gbW-8,gbY+13,CFG.YL,'right');
     ctx.restore();
@@ -3154,7 +3159,7 @@ function drawStartScreen(t) {
   btnY+=authH+gap;
 
   ctx.save(); noGlow(); setFont(10,'700'); glow(CFG.CY,8); ctx.globalAlpha=0.7;
-  txt(`◆ ${totalGems}`,LW-14,LH-8,CFG.CY,'right'); ctx.restore();
+  txt(`XP ${Math.floor(levelXp)}   ◆ ${totalGems}`,LW-14,LH-8,CFG.CY,'right'); ctx.restore();
   if (noAdsPopup) {
     ctx.save();
     ctx.fillStyle='rgba(0,0,0,0.74)'; ctx.fillRect(0,0,LW,LH);
@@ -3324,17 +3329,17 @@ function drawAboutScreen(t) {
   ctx.restore();
 
   const lines=[
-    'SLOPE is a neon-styled arcade survival runner built around reflexes,',
-    'score chaining, progression, unlockable cosmetics, and replay-driven',
-    'challenge systems. Players dodge hazards, earn gems, complete quests,',
-    'level up, purchase upgrades, and unlock skins, auras, and themes across',
-    'multiple game modes.',
+    'SLOPE is a neon-styled arcade survival runner focused on reflexes,',
+    'score chaining, progression, quests, upgrades, and unlockable cosmetics.',
+    'Players dodge hazards, earn gems, gain EXP, level up, complete missions,',
+    'unlock exclusive content, and improve their loadout across multiple',
+    'game modes.',
     '',
     'Version 1.0.0 marks the official release of Season 1.',
     `Season 2 officially releases on ${SEASON_NEXT_RELEASE}.`,
-    'Season 2 expands the game with a full Level System, additional quests,',
-    'a completely revamped Shop, daily rotating content, new gameplay modes,',
-    'progression upgrades, and broader seasonal rewards.',
+    'Season 2 expands the game with a full Level System, more quests, a larger',
+    'Shop, rotating live content, backend automation, new gameplay modes, and',
+    'broader seasonal rewards.',
     '',
     `Supported versions: ${SUPPORTED_VERSIONS.join(' and ')}.`
   ];
@@ -3610,12 +3615,32 @@ function drawQuestsScreen(t) {
     txt(obj.desc,bx+34,y+32,done?'rgba(57,255,20,0.7)':'rgba(0,245,255,0.6)','left');
 
     // Reward
+    const qXp=(obj.reward>=1200)?1000:(obj.reward>=800)?500:(obj.reward>=450)?200:(obj.reward>=220)?100:50;
     setFont(9,'700'); glow(CFG.YL,done?6:4); ctx.globalAlpha=done?0.9:0.6;
-    txt(`+${obj.reward} ◆`,bx+bw-12,y+26,CFG.YL,'right');
+    txt(`EXP +${qXp}   ◆ +${obj.reward}`,bx+bw-14,y+26,CFG.YL,'right');
+
+    const unlockMeta=questUnlockForObjective(obj);
+    if (unlockMeta) {
+      const rareCol=rarityColorForQuest(unlockMeta.rarity);
+      const cx=bx+bw-20, cy=y+bh-12;
+      ctx.save();
+      ctx.globalAlpha=done?1:0.88;
+      ctx.fillStyle='rgba(5,10,16,0.95)'; circle(cx,cy,10,'rgba(5,10,16,0.95)',true);
+      ctx.strokeStyle=rareCol; ctx.lineWidth=1.4; glow(rareCol,10); circle(cx,cy,10,rareCol,false);
+      setFont(9,'900'); glow(unlockMeta.col,8); txt(unlockMeta.icon,cx,cy+3,unlockMeta.col);
+      if (done || unlockMeta.owned) {
+        setFont(7,'900'); noGlow(); txt(unlockMeta.owned?'✓':'★',cx+9,cy+9,unlockMeta.owned?CFG.GR:CFG.YL);
+      }
+      ctx.restore();
+      if (Math.abs(mouseCanvasPos.x-cx)<12 && Math.abs(mouseCanvasPos.y-cy)<12) {
+        setFont(7,'700',"'Share Tech Mono',monospace"); noGlow();
+        txt(`${unlockMeta.name} • ${unlockMeta.rarity.toUpperCase()}`,bx+bw-38,y+10,rareCol,'right');
+      }
+    }
 
     if (done) {
       ctx.save(); setFont(8,'400',"'Share Tech Mono',monospace"); noGlow(); ctx.globalAlpha=0.4;
-      txt('COMPLETED',bx+bw-12,y+42,CFG.GR,'right'); ctx.restore();
+      txt('COMPLETED',bx+bw-36,y+42,CFG.GR,'right'); ctx.restore();
     }
     ctx.restore();
   });
@@ -3985,7 +4010,7 @@ function drawPause() {
   setFont(28,'900'); glow(CFG.YL,14); ctx.globalAlpha=1;
   txt(`${Math.floor(score)}`,LW/2,scoreY+24,CFG.YL);
   setFont(9,'700'); glow(CFG.CY,8); ctx.globalAlpha=0.75;
-  txt(`◆ ${totalGems}  +${gemsCollected} this run`,LW/2,scoreY+42,CFG.CY);
+  txt(`XP ${Math.floor(levelXp)}   ◆ ${totalGems}  +${gemsCollected} this run`,LW/2,scoreY+42,CFG.CY);
   ctx.restore();
 
   const topThree=ACTIVE_OBJECTIVES.slice(0,3);
@@ -4038,7 +4063,7 @@ function drawPause() {
   ctx.strokeStyle='rgba(170,220,255,0.9)'; ctx.lineWidth=1.1; ctx.strokeRect(accX,accY,accW,accH);
   const accName=(isSignedIn?(auth.name||'RUNNER'):'GUEST').slice(0,14);
   setFont(8,'700',"'Share Tech Mono',monospace");
-  txt(`👤 ${accName}   UID ${(auth.uid||'LOCAL').slice(0,10)}   ◆${totalGems}`,accX+8,accY+16,'#f2f8ff','left');
+  txt(`👤 ${accName}   UID ${(auth.uid||'LOCAL').slice(0,10)}   XP ${Math.floor(levelXp)}   ◆${totalGems}`,accX+8,accY+16,'#f2f8ff','left');
   ctx.save();
   ctx.fillStyle='rgba(255,216,77,0.18)'; ctx.fillRect(BTNS.pauseLevelBadge.x,BTNS.pauseLevelBadge.y,BTNS.pauseLevelBadge.w,BTNS.pauseLevelBadge.h);
   ctx.strokeStyle='#ffd84d'; ctx.lineWidth=1.2; glow('#ffd84d',8); ctx.strokeRect(BTNS.pauseLevelBadge.x,BTNS.pauseLevelBadge.y,BTNS.pauseLevelBadge.w,BTNS.pauseLevelBadge.h);
@@ -4477,10 +4502,13 @@ let jetpackCount=0, regenUsed=0;
 let pwrCounts={JETPACK:0,MAGNET:0,BOOST:0,SHIELD:0,SLOW:0,HEALTH_BOOST:0,MINI_JETPACK:0,NEW_STAGE:0,REGEN:0,X2_GEMS:0,GEM_DROP:0,BAD_LUCK:0};
 
 const MAX_LEVEL=100;
-function loadLevelXP(){ return Math.max(0,Number(localStorage.getItem('slope_level_xp')||'0')); }
-function saveLevelXP(v){ localStorage.setItem('slope_level_xp',String(Math.max(0,Math.floor(v||0)))); if (typeof queueCloudSync==='function') queueCloudSync(); }
-function loadClaimedLevelRewards(){ try{return JSON.parse(localStorage.getItem('slope_level_claimed')||'[]').map(Number);}catch{return[];} }
-function saveClaimedLevelRewards(v){ localStorage.setItem('slope_level_claimed',JSON.stringify(v||[])); if (typeof queueCloudSync==='function') queueCloudSync(); }
+let levelAccountScope='guest_local';
+function levelScopedKey(base){ return `${base}_${levelAccountScope}`; }
+function loadLevelXP(){ return Math.max(0,Number(localStorage.getItem(levelScopedKey('slope_level_xp'))||'0')); }
+function saveLevelXP(v){ localStorage.setItem(levelScopedKey('slope_level_xp'),String(Math.max(0,Math.floor(v||0)))); if (typeof queueCloudSync==='function') queueCloudSync(); }
+function loadClaimedLevelRewards(){ try{return JSON.parse(localStorage.getItem(levelScopedKey('slope_level_claimed'))||'[]').map(Number);}catch{return[];} }
+function saveClaimedLevelRewards(v){ localStorage.setItem(levelScopedKey('slope_level_claimed'),JSON.stringify(v||[])); if (typeof queueCloudSync==='function') queueCloudSync(); }
+function applyLevelScope(uid=''){ levelAccountScope=uid?`uid_${String(uid)}`:'guest_local'; levelXp=loadLevelXP(); claimedLevelRewards=loadClaimedLevelRewards(); }
 let levelXp=loadLevelXP();
 let claimedLevelRewards=loadClaimedLevelRewards();
 function xpRequiredForLevel(level){ const l=Math.max(1,Math.min(MAX_LEVEL,Number(level)||1)); return Math.floor(220 + (l-1)*95 + Math.pow(l-1,1.42)*26); }
@@ -4538,6 +4566,23 @@ function drawLevelBadge(x,y,size,lvl,col=CFG.CY){
 }
 
 function makeQuest(id,label,desc,reward,check){ return {id,label,desc,reward,check}; }
+function questUnlockForObjective(obj){
+  if (!obj) return null;
+  const id=String(obj.id||'');
+  const pick=(arr,kind,rarity)=>{
+    const row=(arr||[]).find(v=>v&&v.unlock==='obj'&&String(v.objId||'')===id);
+    return row?{kind,rarity,icon:row.icon||'●',name:row.name||'UNLOCK',col:row.col||CFG.CY,owned:(kind==='skins'?unlockedChars.includes(row.id):kind==='auras'?unlockedAuras.includes(row.id):unlockedThemes.includes(row.id))}:null;
+  };
+  return pick(CHAR_CATALOG,'skins','epic')||pick(AURA_CATALOG,'auras','rare')||pick(THEME_CATALOG,'themes','mythic');
+}
+function rarityColorForQuest(tag){
+  if (tag==='common') return '#7feaff';
+  if (tag==='rare') return '#59a8ff';
+  if (tag==='epic') return '#b56bff';
+  if (tag==='mythic') return '#ff7ce5';
+  if (tag==='seasonal') return '#ffe45a';
+  return CFG.CY;
+}
 
 function buildObjectivePool() {
   const q=[];
@@ -4693,7 +4738,13 @@ function drawObjectivesPanel() {
     setFont(7,'400',"'Share Tech Mono',monospace"); ctx.globalAlpha=0.5;
     txt(obj.desc,x+74,y+25,'rgba(0,245,255,0.6)','center');
     setFont(8,'700'); ctx.globalAlpha=0.75;
-    txt(`+${obj.reward}◆`,x+74,y+36,CFG.YL,'center');
+    const qXp=(obj.reward>=1200)?1000:(obj.reward>=800)?500:(obj.reward>=450)?200:(obj.reward>=220)?100:50; txt(`EXP +${qXp}  ◆+${obj.reward}`,x+74,y+36,CFG.YL,'center');
+    const unlockMeta=questUnlockForObjective(obj);
+    if (unlockMeta) {
+      const rc=rarityColorForQuest(unlockMeta.rarity);
+      ctx.globalAlpha=0.9; ctx.strokeStyle=rc; ctx.lineWidth=1; glow(rc,7); circle(x+138,y+30,8,rc,false);
+      setFont(8,'900'); glow(unlockMeta.col,6); txt(unlockMeta.icon,x+138,y+33,unlockMeta.col);
+    }
   });
   ctx.restore();
 }
@@ -4789,7 +4840,7 @@ const SHOP_PAGES=[
   {title:'SKINS SHOP', key:'skins', list:CHAR_CATALOG.map(v=>({...v,_kind:'skins'}))},
   {title:'AURAS SHOP', key:'auras', list:AURA_CATALOG.map(v=>({...v,_kind:'auras'}))},
   {title:'THEMES SHOP', key:'themes', list:THEME_CATALOG.map(v=>({...v,_kind:'themes'}))},
-  {title:'BUNDLES SHOP', key:'bundles', list:[...CHAR_CATALOG.slice(8,20),...AURA_CATALOG.slice(5,10),...THEME_CATALOG.slice(5,10)].map(v=>({...v,_kind:CHAR_CATALOG.includes(v)?'skins':(AURA_CATALOG.includes(v)?'auras':'themes')}))},
+  {title:'BUNDLES SHOP', key:'bundles', list:[...CHAR_CATALOG.slice(8,20),...AURA_CATALOG.slice(5,10),...THEME_CATALOG.slice(5,10)].map(v=>({...v,_kind:'bundles'}))},
   {title:'BOOSTS SHOP', key:'boosts', list:[...CHAR_CATALOG.slice(20),...AURA_CATALOG.slice(10),...THEME_CATALOG.slice(10)].map(v=>({...v,_kind:CHAR_CATALOG.includes(v)?'skins':(AURA_CATALOG.includes(v)?'auras':'themes')}))},
 ];
 
@@ -4799,6 +4850,7 @@ function shopEntryByKind(kind,id){
   if (kind==='skins') { const row=CHAR_CATALOG.find(v=>v.id===id); return row?{...row,_kind:'skins'}:null; }
   if (kind==='auras') { const row=AURA_CATALOG.find(v=>v.id===id); return row?{...row,_kind:'auras'}:null; }
   if (kind==='themes') { const row=THEME_CATALOG.find(v=>v.id===id); return row?{...row,_kind:'themes'}:null; }
+  if (kind==='bundles') { const row=CHAR_CATALOG.find(v=>v.id===id)||AURA_CATALOG.find(v=>v.id===id)||THEME_CATALOG.find(v=>v.id===id); return row?{...row,_kind:'bundles'}:null; }
   return null;
 }
 function defaultShopSectionPayload(){
@@ -4836,6 +4888,52 @@ let charShopActiveTab='featured';
 const SHOP_ITEMS_PER_PAGE=12;
 const charBtnRects=[];
 let charShopMsg='', charShopMsgT=0;
+let bundlePopup=null;
+
+function bundleContentsFromItem(item){
+  if (!item) return [];
+  const out=[];
+  const idxSkin=Math.max(0,CHAR_CATALOG.findIndex(v=>v.id===item.id));
+  const idxAura=Math.max(0,AURA_CATALOG.findIndex(v=>v.id===item.id));
+  const idxTheme=Math.max(0,THEME_CATALOG.findIndex(v=>v.id===item.id));
+  [CHAR_CATALOG[idxSkin],CHAR_CATALOG[(idxSkin+1)%CHAR_CATALOG.length]].forEach(v=>v&&out.push({...v,_kind:'skins'}));
+  [AURA_CATALOG[idxAura],AURA_CATALOG[(idxAura+1)%AURA_CATALOG.length]].forEach(v=>v&&out.push({...v,_kind:'auras'}));
+  [THEME_CATALOG[idxTheme],THEME_CATALOG[(idxTheme+1)%THEME_CATALOG.length]].forEach(v=>v&&out.push({...v,_kind:'themes'}));
+  return out.filter((v,i,a)=>a.findIndex(x=>x._kind===v._kind&&x.id===v.id)===i);
+}
+function isOwnedByKind(kind,id){
+  if (kind==='skins') return unlockedChars.includes(id);
+  if (kind==='auras') return unlockedAuras.includes(id);
+  return unlockedThemes.includes(id);
+}
+function openBundlePopup(item){
+  const contents=bundleContentsFromItem(item);
+  const buyCost=Math.max(1200,Math.floor(contents.reduce((sum,v)=>sum+Number(v.cost||0),0)*0.65));
+  bundlePopup={item,contents,buyCost};
+}
+function purchaseBundlePopup(){
+  if (!bundlePopup) return;
+  if (totalGems<bundlePopup.buyCost) { charShopMsg=`Need ${bundlePopup.buyCost}◆ gems!`; charShopMsgT=1.6; SFX.hit(); return; }
+  totalGems-=bundlePopup.buyCost; addSpentGems(bundlePopup.buyCost); saveBank(totalGems);
+  bundlePopup.contents.forEach(v=>{
+    if (v._kind==='skins') unlockChar(v.id);
+    else if (v._kind==='auras') unlockGeneric(v.id,unlockedAuras,saveAuraUnlocks);
+    else unlockGeneric(v.id,unlockedThemes,saveThemeUnlocks);
+  });
+  unlockedChars=loadUnlocked();
+  charShopMsg=`${bundlePopup.item.name} bundle purchased!`;
+  charShopMsgT=2.2;
+  SFX.pwr();
+}
+function equipBundlePopup(){
+  if (!bundlePopup) return;
+  const owned=bundlePopup.contents.filter(v=>isOwnedByKind(v._kind,v.id));
+  const skin=owned.find(v=>v._kind==='skins'); const aura=owned.find(v=>v._kind==='auras'); const theme=owned.find(v=>v._kind==='themes');
+  if (skin) setSelectedChar(skin.id);
+  if (aura) setSelectedAura(aura.id);
+  if (theme) setSelectedTheme(theme.id);
+  charShopMsg=`${bundlePopup.item.name} equipped!`; charShopMsgT=1.8; SFX.pwr();
+}
 
 function loadAuraUnlocks(){ try{return JSON.parse(localStorage.getItem('slope_auras')||'["none"]');}catch{return['none'];} }
 function saveAuraUnlocks(arr){ localStorage.setItem('slope_auras',JSON.stringify(arr)); if (typeof queueCloudSync==='function') queueCloudSync(); }
@@ -4891,7 +4989,14 @@ function inventoryPoolByFilter(){
 }
 
 function handleCharShopTap(p) {
-  if (hitBtn(p,BTNS.charBack)) { SFX.click(); doTransition(charShopReturnState||'MENU'); charShopReturnState='MENU'; charShopView='shop'; return; }
+  if (hitBtn(p,BTNS.charBack)) { SFX.click(); bundlePopup=null; doTransition(charShopReturnState||'MENU'); charShopReturnState='MENU'; charShopView='shop'; return; }
+  if (bundlePopup) {
+    if (hitBtn(p,BTNS.bundleClose)) { SFX.click(); bundlePopup=null; return; }
+    if (hitBtn(p,BTNS.bundlePurchase)) { SFX.click(); purchaseBundlePopup(); return; }
+    if (hitBtn(p,BTNS.bundleEquip)) { SFX.click(); equipBundlePopup(); return; }
+    bundlePopup=null;
+    return;
+  }
   if (charShopView==='inventory') {
     if (hitBtn(p,BTNS.charInvFilter)) { SFX.click(); charShopFilterOpen=!charShopFilterOpen; return; }
     const opts=[['default',BTNS.charInvOptDefault],['skins',BTNS.charInvOptSkins],['auras',BTNS.charInvOptAuras],['themes',BTNS.charInvOptThemes]];
@@ -4925,13 +5030,16 @@ function handleCharShopTap(p) {
     }
   }
 
+  if (hitBtn(p,BTNS.charRightSkins)) { SFX.click(); charShopView='inventory'; charShopInvFilter='default'; charShopInvPage=0; charShopFilterOpen=false; return; }
   const page=SHOP_PAGES.find(v=>v.key===charShopActiveTab)||SHOP_PAGES[0];
   const pageKey=page.key;
   charBtnRects.forEach((r)=>{
     if (!hitBtn(p,r)) return;
     const item=r._item;
     if (!item) return;
-    handleShopCategoryItem(item,item._kind||pageKey);
+    const kind=item._kind||pageKey;
+    if (kind==='bundles') { openBundlePopup(item); return; }
+    handleShopCategoryItem(item,kind);
   });
 }
 
@@ -4974,7 +5082,7 @@ function drawCharShop(t) {
   }
 
   setFont(26,'900'); glow(CFG.YL,18); txt(pageTitle,LW/2,62,CFG.YL);
-  setFont(11,'700'); glow(CFG.CY,10); txt(`◆ ${totalGems} GEMS`,LW/2,80,CFG.CY);
+  setFont(11,'700'); glow(CFG.CY,10); txt(`XP ${Math.floor(levelXp)}   ◆ ${totalGems} GEMS`,LW/2,80,CFG.CY);
 
   BTNS.charShopTabButtons=[];
   if (!isInv) {
@@ -4988,8 +5096,8 @@ function drawCharShop(t) {
     ];
     let tx=12,ty=10;
     tabs.forEach(tab=>{
-      const tw=Math.max(58,ctx.measureText(tab.lbl).width+14);
-      if (tx+tw>LW-12) return;
+      const tw=52;
+      if (tx+tw>LW-60) return;
       const active=charShopActiveTab===tab.k;
       const col=active?tab.col:'#3f5668';
       const b={x:tx,y:ty,w:tw,h:20,tab:tab.k};
@@ -4997,6 +5105,15 @@ function drawCharShop(t) {
       drawNeonBtn(tx,ty,tw,20,col,tab.lbl,7,0.9,active?Math.sin(t*2.4):0);
       tx+=tw+4;
     });
+    BTNS.charRightSkins={x:LW-44,y:10,w:32,h:90};
+    const skinRailOn=(charShopActiveTab==='skins'||isInv);
+    ctx.save();
+    ctx.fillStyle=skinRailOn?'rgba(255,230,0,0.2)':'rgba(18,30,40,0.75)'; ctx.fillRect(BTNS.charRightSkins.x,BTNS.charRightSkins.y,BTNS.charRightSkins.w,BTNS.charRightSkins.h);
+    ctx.strokeStyle=skinRailOn?CFG.YL:'rgba(120,170,210,0.55)'; ctx.lineWidth=1.2; glow(skinRailOn?CFG.YL:CFG.CY,skinRailOn?10:4); ctx.strokeRect(BTNS.charRightSkins.x,BTNS.charRightSkins.y,BTNS.charRightSkins.w,BTNS.charRightSkins.h);
+    setFont(12,'900'); glow('#ffd84d',8); txt('◉',LW-28,38,'#ffd84d');
+    setFont(7,'700',"'Share Tech Mono',monospace"); noGlow(); txt('UNLOCK',LW-28,58,'#b6ecff');
+    txt('ED',LW-28,70,'#b6ecff');
+    ctx.restore();
     setFont(8,'700',"'Share Tech Mono',monospace"); noGlow();
     txt(`TODAY'S SPOTLIGHT • ${shopCountdownHour()}`,16,104,'#9feeff','left');
     txt(`ROTATES • ${shopCountdownDaily()}`,LW-16,104,'#9feeff','right');
@@ -5009,6 +5126,7 @@ function drawCharShop(t) {
 
   if (isInv) {
     const invLabel=charShopInvFilter==='default'?'INVENTORY':(charShopInvFilter==='skins'?'SKINS':(charShopInvFilter==='auras'?'AURAS':'THEMES'));
+    setFont(7,'700',"'Share Tech Mono',monospace"); noGlow(); txt('UNLOCKED ITEMS',LW-16,104,'rgba(159,238,255,0.8)','right');
     BTNS.charInvFilter={x:10,y:10,w:132,h:24};
     drawNeonBtn(10,10,132,24,CFG.CY,`${invLabel} ▾`,8,1,0);
     BTNS.charInvOptDefault=BTNS.charInvOptSkins=BTNS.charInvOptAuras=BTNS.charInvOptThemes=null;
@@ -5026,6 +5144,7 @@ function drawCharShop(t) {
     charShopFilterOpen=false;
     BTNS.charInvFilter=BTNS.charInvOptDefault=BTNS.charInvOptSkins=BTNS.charInvOptAuras=BTNS.charInvOptThemes=null;
   }
+  if (isInv) BTNS.charRightSkins=null;
 
   charBtnRects.length=0;
   const cW=120,cH=104,gapX=7,gapY=10;
@@ -5064,8 +5183,8 @@ function drawCharShop(t) {
   for (const r of charBtnRects) {
     const item=r._item;
     const kind=item._kind||pageKey;
-    const owned = kind==='skins'?unlockedChars.includes(item.id):kind==='auras'?unlockedAuras.includes(item.id):unlockedThemes.includes(item.id);
-    const selected = kind==='skins'?selectedChar===item.id:kind==='auras'?selectedAura===item.id:selectedTheme===item.id;
+    const owned = kind==='skins'?unlockedChars.includes(item.id):kind==='auras'?unlockedAuras.includes(item.id):kind==='themes'?unlockedThemes.includes(item.id):bundleContentsFromItem(item).every(v=>isOwnedByKind(v._kind,v.id));
+    const selected = kind==='skins'?selectedChar===item.id:kind==='auras'?selectedAura===item.id:kind==='themes'?selectedTheme===item.id:false;
     const acol=item.col||CFG.CY;
     const bx=r.x,by=r.y;
 
@@ -5086,11 +5205,12 @@ function drawCharShop(t) {
     } else if (owned) {
       ctx.fillStyle='rgba(57,255,20,0.15)'; ctx.fillRect(bx+10,by+r.h-20,r.w-20,15);
       setFont(8,'700'); noGlow(); txt('OWNED',bx+r.w/2,by+r.h-8,CFG.GR);
-    } else if (!isInv && item.unlock==='buy') {
-      ctx.fillStyle=totalGems>=item.cost?hexToRgba(CFG.YL,0.12):'rgba(255,0,0,0.08)';
+    } else if (!isInv && (item.unlock==='buy' || kind==='bundles')) {
+      const bundleCost=(kind==='bundles'?Math.max(1200,Math.floor(bundleContentsFromItem(item).reduce((sum,v)=>sum+Number(v.cost||0),0)*0.65)):item.cost);
+      ctx.fillStyle=totalGems>=bundleCost?hexToRgba(CFG.YL,0.12):'rgba(255,0,0,0.08)';
       ctx.fillRect(bx+10,by+r.h-20,r.w-20,15);
-      const cc=totalGems>=item.cost?CFG.YL:'rgba(255,100,100,0.8)';
-      setFont(8,'700'); noGlow(); txt(`◆${item.cost}`,bx+r.w/2,by+r.h-8,cc);
+      const cc=totalGems>=bundleCost?CFG.YL:'rgba(255,100,100,0.8)';
+      setFont(8,'700'); noGlow(); txt(`◆${bundleCost}`,bx+r.w/2,by+r.h-8,cc);
     } else if (!isInv) {
       ctx.fillStyle='rgba(0,245,255,0.08)'; ctx.fillRect(bx+10,by+r.h-20,r.w-20,15);
       setFont(7,'400',"'Share Tech Mono',monospace"); noGlow(); ctx.globalAlpha=0.6;
@@ -5122,6 +5242,7 @@ function drawCharShop(t) {
     charShopFilterOpen=false;
     BTNS.charInvFilter=BTNS.charInvOptDefault=BTNS.charInvOptSkins=BTNS.charInvOptAuras=BTNS.charInvOptThemes=null;
   }
+  if (isInv) BTNS.charRightSkins=null;
 
   const pgY=LH-76;
   BTNS.charPrev={x:20,y:pgY,w:50,h:28}; BTNS.charNext={x:LW-70,y:pgY,w:50,h:28};
@@ -5135,6 +5256,38 @@ function drawCharShop(t) {
   if (charShopMsgT>0) {
     ctx.save(); ctx.globalAlpha=Math.min(1,charShopMsgT);
     setFont(11,'700'); glow(CFG.YL,14); txt(charShopMsg,LW/2,pgY-12,CFG.YL); ctx.restore();
+  }
+  if (bundlePopup) {
+    const w=312,h=246,x=(LW-w)/2,y=(LH-h)/2;
+    ctx.save();
+    ctx.fillStyle='rgba(0,0,0,0.78)'; ctx.fillRect(0,0,LW,LH);
+    ctx.fillStyle='rgba(4,10,18,0.96)'; ctx.fillRect(x,y,w,h);
+    ctx.strokeStyle='#66d9ff'; ctx.lineWidth=2; glow('#66d9ff',14); ctx.strokeRect(x,y,w,h);
+    setFont(13,'900'); glow('#66d9ff',10); txt(`${bundlePopup.item.name} BUNDLE`,LW/2,y+24,'#66d9ff');
+    setFont(8,'700',"'Share Tech Mono',monospace"); noGlow(); txt('INCLUDES',x+16,y+44,'#bdefff','left');
+    bundlePopup.contents.slice(0,6).forEach((v,i)=>{
+      const ry=y+60+i*20;
+      const rc=v.col||CFG.CY;
+      setFont(9,'900'); glow(rc,7); txt(v.icon||'●',x+20,ry+4,rc,'left');
+      setFont(8,'700',"'Share Tech Mono',monospace"); noGlow();
+      txt(`${String(v._kind||'item').toUpperCase()} • ${v.name}`,x+36,ry+4,isOwnedByKind(v._kind,v.id)?CFG.GR:'#d6f5ff','left');
+    });
+    const allOwned=bundlePopup.contents.every(v=>isOwnedByKind(v._kind,v.id));
+    const allEquipped=bundlePopup.contents.every(v=>(v._kind==='skins'&&selectedChar===v.id)||(v._kind==='auras'&&selectedAura===v.id)||(v._kind==='themes'&&selectedTheme===v.id)||(v._kind!=='skins'&&v._kind!=='auras'&&v._kind!=='themes'));
+    BTNS.bundleClose={x:x+w-118,y:y+h-38,w:102,h:26};
+    if (!allOwned) {
+      BTNS.bundlePurchase={x:x+16,y:y+h-38,w:170,h:26};
+      BTNS.bundleEquip=null;
+      drawNeonBtn(BTNS.bundlePurchase.x,BTNS.bundlePurchase.y,BTNS.bundlePurchase.w,BTNS.bundlePurchase.h,CFG.YL,`PURCHASE ◆${bundlePopup.buyCost}`,9,1,Math.sin(t*3));
+    } else {
+      BTNS.bundlePurchase=null;
+      BTNS.bundleEquip={x:x+16,y:y+h-38,w:170,h:26};
+      drawNeonBtn(BTNS.bundleEquip.x,BTNS.bundleEquip.y,BTNS.bundleEquip.w,BTNS.bundleEquip.h,allEquipped?CFG.GR:CFG.CY,allEquipped?'EQUIPPED':'EQUIP',10,1,Math.sin(t*3));
+    }
+    drawNeonBtn(BTNS.bundleClose.x,BTNS.bundleClose.y,BTNS.bundleClose.w,BTNS.bundleClose.h,CFG.PK,'CLOSE',10,1,Math.sin(t*2));
+    ctx.restore();
+  } else {
+    BTNS.bundleClose=BTNS.bundlePurchase=BTNS.bundleEquip=null;
   }
   BTNS.charBack={x:(LW-140)/2,y:LH-44,w:140,h:30};
   drawNeonBtn((LW-140)/2,LH-44,140,30,CFG.PK,'← BACK',11,0.85,Math.sin(t*2));
@@ -5260,7 +5413,8 @@ const FIREBASE_CONFIG={
 const CLOUD_INFO_ROOT='SLOPE/user/encrypted/info';
 const CLOUD_SLOPE_ROOT='SLOPE/users';
 const CLOUD_LEADERBOARD_ROOT='SLOPE/leaderboards';
-const CLOUD_INFO_ROOT_FALLBACKS=[CLOUD_INFO_ROOT];
+const CLOUD_SOCIAL_INFO_USERS_ROOT='TheGeneric/privacy/user/social/info/users';
+const CLOUD_INFO_ROOT_FALLBACKS=[CLOUD_INFO_ROOT,CLOUD_SOCIAL_INFO_USERS_ROOT];
 
 let fbReady=false, fbAuth=null, fbDb=null, fbUser=null;
 let cloudSyncTimer=0;
@@ -5481,6 +5635,7 @@ async function ensureSupportedVersions(){
   if (!fbReady || !fbDb) return;
   try {
     await fbDb.ref('SLOPE/config/currentVersion').set(VERSION);
+    await fbDb.ref('SLOPE/config/currentSeason').set('1');
     const sv=await fbDb.ref('SLOPE/config/supportedVersions').get();
     const list=(sv&&sv.val)?(sv.val()||[]):[];
     const merged=Array.from(new Set([...(Array.isArray(list)?list:[]), ...SUPPORTED_VERSIONS]));
@@ -5793,6 +5948,7 @@ function initFirebase(){
         isSignedIn=true;
         const keepVerified=(auth&&typeof auth.verified==='boolean')?auth.verified:!!u.emailVerified;
         auth={signedIn:true,name:u.displayName||auth.name||'Runner',email:u.email||'',uid:u.uid||'',verified:!!keepVerified,bio:profileBio||'',avatar:profileAvatar||'',admin:!!(auth&&auth.admin),status:String((auth&&auth.status)||'online'),statusPref:STATUS_COLORS[String((auth&&auth.statusPref)||'').toLowerCase()]?String(auth.statusPref).toLowerCase():'online'};
+        applyLevelScope(u.uid||'');
         saveAuth(auth);
         refreshAdminFlag();
         socialData={friends:[],followers:[],following:[],received:[],sent:[]};
@@ -5805,6 +5961,7 @@ function initFirebase(){
       } else {
         isSignedIn=false;
         auth={...AUTH_GUEST};
+        applyLevelScope('');
         profileBio=''; profileAvatar='';
         cloudProfileRoot=CLOUD_INFO_ROOT;
         cloudGemCount=loadBank();
@@ -5961,7 +6118,10 @@ async function writeCloudUserInfo(extra={}) {
     publicFollowing:clamp(Number(publicProfilePrefs.following||0),0,2),
     ...extra,
   };
-  await fbDb.ref(`${cloudProfileRoot}/${fbUser.uid}`).update(payload);
+  await Promise.all([
+    fbDb.ref(`${cloudProfileRoot}/${fbUser.uid}`).update(payload),
+    fbDb.ref(`${CLOUD_SOCIAL_INFO_USERS_ROOT}/${fbUser.uid}`).update({...payload,cloudRoot:CLOUD_SOCIAL_INFO_USERS_ROOT}),
+  ]);
   await syncSlopeMirror({updatedAt:String(payload.updatedAt)});
 }
 
@@ -5976,6 +6136,8 @@ function buildLocalProgressPayload(){
     selectedAura:selectedAura||'none',
     selectedTheme:selectedTheme||'classic',
     doneObjs:loadDoneObjs(),
+    levelXp:Math.floor(Math.max(0,Number(levelXp||0))),
+    claimedLevelRewards:(claimedLevelRewards||[]).map(Number),
     options:OPTION_PREFS,
     bestScore:bestScore||0,
     modeScores:modeScores||{endless:0,adventure:0,impossible:0,ltm:0},
@@ -6033,6 +6195,8 @@ async function loadCloudProfileAndProgress() {
       if (p.upgrades) { upgrades={...upgrades,...p.upgrades}; saveUpgrades(upgrades); }
       if (Array.isArray(p.unlocked)) { unlockedChars=p.unlocked.slice(); saveUnlocked(unlockedChars); }
       if (Array.isArray(p.doneObjs)) { doneObjs=p.doneObjs.slice(); saveDoneObjs(doneObjs); }
+      if (Number.isFinite(Number(p.levelXp))) { levelXp=Math.max(0,Math.floor(Number(p.levelXp))); saveLevelXP(levelXp); }
+      if (Array.isArray(p.claimedLevelRewards)) { claimedLevelRewards=p.claimedLevelRewards.map(Number).filter(Number.isFinite); saveClaimedLevelRewards(claimedLevelRewards); }
       if (Array.isArray(p.unlockedAuras)) { unlockedAuras=p.unlockedAuras.slice(); saveAuraUnlocks(unlockedAuras); }
       if (Array.isArray(p.unlockedThemes)) { unlockedThemes=p.unlockedThemes.slice(); saveThemeUnlocks(unlockedThemes); }
       if (p.selectedChar) { setSelectedChar(p.selectedChar); }
@@ -6756,6 +6920,7 @@ async function beginDeleteAccountFlow(){
         await Promise.allSettled([
           fbDb.ref(`${CLOUD_SLOPE_ROOT}/${uid}`).remove(),
           fbDb.ref(`${CLOUD_INFO_ROOT}/${uid}`).remove(),
+          fbDb.ref(`${CLOUD_SOCIAL_INFO_USERS_ROOT}/${uid}`).remove(),
           fbDb.ref(`${CLOUD_LEADERBOARD_ROOT}/global/${uid}`).remove(),
           fbDb.ref(`${CLOUD_LEADERBOARD_ROOT}/endless/${uid}`).remove(),
           fbDb.ref(`${CLOUD_LEADERBOARD_ROOT}/adventure/${uid}`).remove(),
@@ -6769,7 +6934,7 @@ async function beginDeleteAccountFlow(){
         ]);
         await fbUser.delete();
         openActionPopup('DELETE ACCOUNT','Success. Your account has been officially removed.',true,false);
-        isSignedIn=false; auth={...AUTH_GUEST}; saveAuth(auth);
+        isSignedIn=false; auth={...AUTH_GUEST}; saveAuth(auth); applyLevelScope('');
         socialData={friends:[],followers:[],following:[],received:[],sent:[]};
         socialCounters={friends:0,followers:0,following:0,received:0,sent:0};
         rebuildSocialRelationCache();
@@ -6783,7 +6948,7 @@ async function beginDeleteAccountFlow(){
 
 function doSignOut(){
   if (fbReady && fbAuth) fbAuth.signOut();
-  isSignedIn=false; auth={...AUTH_GUEST}; saveAuth(auth);
+  isSignedIn=false; auth={...AUTH_GUEST}; saveAuth(auth); applyLevelScope('');
   cloudProfileRoot=CLOUD_INFO_ROOT;
   cloudGemCount=loadBank();
   cloudUpdatedAt=0;
@@ -6926,7 +7091,7 @@ let ltmSelectedIndex=-1;
 let socialData={friends:[],followers:[],following:[],received:[],sent:[]};
 let socialCounters={friends:0,followers:0,following:0,received:0,sent:0};
 let socialView={mode:'friends',scroll:0,viewH:0,contentH:0,renderCount:0,loading:false,ownerUid:'',ownerName:'',ownerIsSelf:true};
-const CLOUD_SOCIAL_ROOT='SLOPE/social';
+const CLOUD_SOCIAL_ROOT='TheGeneric/privacy/user/social/info';
 function minSocialScroll(){ return Math.min(0,socialView.viewH-socialView.contentH); }
 function mapSocialSnapToList(snap,idxMap){
   const v=(snap&&snap.val)?(snap.val()||{}):{};
@@ -6943,10 +7108,39 @@ function mapSocialSnapToList(snap,idxMap){
 async function fetchUserIndexMap(){
   if (!fbReady || !fbDb) return {};
   try {
-    const snap=await fbDb.ref(CLOUD_SLOPE_ROOT).get();
-    const all=snap&&snap.val?snap.val():{};
+    const [socialSnap,slopeSnap]=await Promise.all([
+      fbDb.ref(CLOUD_SOCIAL_INFO_USERS_ROOT).get(),
+      fbDb.ref(CLOUD_SLOPE_ROOT).get(),
+    ]);
+    const socialAll=socialSnap&&socialSnap.val?socialSnap.val():{};
+    const slopeAll=slopeSnap&&slopeSnap.val?slopeSnap.val():{};
     const out={};
-    Object.keys(all||{}).forEach(uid=>{ const u=all[uid]||{}; out[uid]={uid,name:u.displayName||u.name||u.email||'Runner',avatar:u.pfpLink||u.avatar||'',status:String(u.status||'offline').toLowerCase(),statusPref:String(u.statusPref||u.status||'online').toLowerCase(),lastSeen:Number(u.lastSeen||0),bestScore:Number(u.bestScore||0),bio:String(u.bio||''),selectedSkin:String(u.selectedSkin||u.skin||''),selectedAura:String(u.selectedAura||u.aura||''),selectedTheme:String(u.selectedTheme||u.theme||''),createdAt:Number(u.createdAt||0),admin:(u.admin===true||String(u.admin)==='true'),verified:(u.verified===true||String(u.verified)==='true'),publicBio:clamp(Number(u.publicBio||2),0,2),publicFriends:clamp(Number(u.publicFriends||2),0,2),publicFollowers:clamp(Number(u.publicFollowers||2),0,2),publicFollowing:clamp(Number(u.publicFollowing||2),0,2)}; });
+    const upsert=(uid,row)=>{
+      const prev=out[uid]||{};
+      const u=row||{};
+      out[uid]={
+        uid,
+        name:u.displayName||u.name||u.email||prev.name||'Runner',
+        avatar:u.pfpLink||u.avatar||prev.avatar||'',
+        status:String(u.status||prev.status||'offline').toLowerCase(),
+        statusPref:String(u.statusPref||u.status||prev.statusPref||'online').toLowerCase(),
+        lastSeen:Number(u.lastSeen||prev.lastSeen||0),
+        bestScore:Number(u.bestScore||prev.bestScore||0),
+        bio:String(u.bio||prev.bio||''),
+        selectedSkin:String(u.selectedSkin||u.skin||prev.selectedSkin||''),
+        selectedAura:String(u.selectedAura||u.aura||prev.selectedAura||''),
+        selectedTheme:String(u.selectedTheme||u.theme||prev.selectedTheme||''),
+        createdAt:Number(u.createdAt||prev.createdAt||0),
+        admin:(u.admin===true||String(u.admin)==='true'||prev.admin===true),
+        verified:(u.verified===true||String(u.verified)==='true'||prev.verified===true),
+        publicBio:clamp(Number.isFinite(Number(u.publicBio))?Number(u.publicBio):(Number.isFinite(Number(prev.publicBio))?Number(prev.publicBio):2),0,2),
+        publicFriends:clamp(Number.isFinite(Number(u.publicFriends))?Number(u.publicFriends):(Number.isFinite(Number(prev.publicFriends))?Number(prev.publicFriends):2),0,2),
+        publicFollowers:clamp(Number.isFinite(Number(u.publicFollowers))?Number(u.publicFollowers):(Number.isFinite(Number(prev.publicFollowers))?Number(prev.publicFollowers):2),0,2),
+        publicFollowing:clamp(Number.isFinite(Number(u.publicFollowing))?Number(u.publicFollowing):(Number.isFinite(Number(prev.publicFollowing))?Number(prev.publicFollowing):2),0,2),
+      };
+    };
+    Object.keys(slopeAll||{}).forEach(uid=>upsert(uid,slopeAll[uid]));
+    Object.keys(socialAll||{}).forEach(uid=>upsert(uid,socialAll[uid]));
     return out;
   } catch(e){ return {}; }
 }
@@ -7028,13 +7222,12 @@ async function openMiniProfileByUsername(raw){
   pendingFoundProfile=null;
   openActionPopup('FIND USER','Searching user...',true,true);
   try {
-    const snap=await fbDb.ref(CLOUD_SLOPE_ROOT).get();
-    const all=snap&&snap.val?snap.val():{};
+    const idx=await fetchUserIndexMap();
     let foundUid='';
-    Object.keys(all||{}).some(uid=>{ const u=all[uid]||{}; const nm=String(u.displayName||u.name||u.email||'').toLowerCase(); if (nm===q) { foundUid=uid; return true; } return false; });
+    Object.keys(idx||{}).some(uid=>{ const u=idx[uid]||{}; const nm=String(u.name||'').toLowerCase(); if (nm===q) { foundUid=uid; return true; } return false; });
     if (!foundUid) { openActionPopup('FIND USER','Cannot find user.',false,false); return false; }
-    const u=all[foundUid]||{};
-    pendingFoundProfile={uid:foundUid,name:String(u.displayName||u.name||'Runner'),avatar:String(u.pfpLink||u.avatar||''),status:String(u.status||'offline'),statusPref:String(u.statusPref||u.status||'online'),lastSeen:Number(u.lastSeen||0),bio:String(u.bio||''),bestScore:Number(u.bestScore||0),selectedSkin:String(u.selectedSkin||u.skin||''),selectedAura:String(u.selectedAura||u.aura||''),selectedTheme:String(u.selectedTheme||u.theme||''),createdAt:Number(u.createdAt||0),admin:(u.admin===true||String(u.admin)==='true'),verified:(u.verified===true||String(u.verified)==='true'),publicBio:clamp(Number(u.publicBio||2),0,2),publicFriends:clamp(Number(u.publicFriends||2),0,2),publicFollowers:clamp(Number(u.publicFollowers||2),0,2),publicFollowing:clamp(Number(u.publicFollowing||2),0,2)};
+    const u=idx[foundUid]||{};
+    pendingFoundProfile={uid:foundUid,name:String(u.name||'Runner'),avatar:String(u.avatar||''),status:String(u.status||'offline'),statusPref:String(u.statusPref||u.status||'online'),lastSeen:Number(u.lastSeen||0),bio:String(u.bio||''),bestScore:Number(u.bestScore||0),selectedSkin:String(u.selectedSkin||u.skin||''),selectedAura:String(u.selectedAura||u.aura||''),selectedTheme:String(u.selectedTheme||u.theme||''),createdAt:Number(u.createdAt||0),admin:(u.admin===true||String(u.admin)==='true'),verified:(u.verified===true||String(u.verified)==='true'),publicBio:clamp(Number(u.publicBio||2),0,2),publicFriends:clamp(Number(u.publicFriends||2),0,2),publicFollowers:clamp(Number(u.publicFollowers||2),0,2),publicFollowing:clamp(Number(u.publicFollowing||2),0,2)};
     openActionPopup('FIND USER',`Found: ${pendingFoundProfile.name} • Best ${Math.floor(pendingFoundProfile.bestScore||0)}`,true,false,()=>{
       if (!pendingFoundProfile) return;
       playerCardPopup.active=true;
