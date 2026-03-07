@@ -990,7 +990,7 @@ function handleTap(e) {
       return;
     }
     if (hitBtn(p,BTNS.noAds)) { SFX.click(); noAdsPopup=true; return; }
-    if (hitBtn(p, BTNS.start))    { SFX.click(); doTransition('MODESELECT'); return; }
+    if (hitBtn(p, BTNS.start))    { SFX.click(); modeSelScrollX=0; doTransition('MODESELECT'); return; }
     if (hitBtn(p, BTNS.about))    { SFX.click(); doTransition('ABOUT');      return; }
     if (hitBtn(p, BTNS.controls)) { SFX.click(); doTransition('CONTROLS');   return; }
     if (hitBtn(p, BTNS.settings)) { SFX.click(); doTransition('SETTINGS');   return; }
@@ -1157,7 +1157,7 @@ function handleTap(e) {
     return;
   }
   if (gs === 'ADMIN_LTM') {
-    if (hitBtn(p,BTNS.adminLtmBack)) { SFX.click(); doTransition('MODESELECT'); return; }
+    if (hitBtn(p,BTNS.adminLtmBack)) { SFX.click(); modeSelScrollX=0; doTransition('MODESELECT'); return; }
     const pAdmin={x:p.x,y:p.y-adminLtmScroll};
     const liveBtn=adminLtmTestButtons[-1];
     if (liveBtn && hitBtn(pAdmin,liveBtn)) {
@@ -1546,7 +1546,7 @@ window.addEventListener('keydown', e => {
   if ((e.key===' '||e.key==='Enter') && gs==='OVER')   { doTransition('SHOP'); shuffleShop(); }
   if (e.key==='Escape' && gs==='SHOP')      { doTransition('MODESELECT'); }
   if (e.key==='Escape' && gs==='CHARSHOP')  { doTransition(charShopReturnState||'MENU'); charShopReturnState='MENU'; }
-  if (e.key==='Escape' && gs==='MODESELECT'){ doTransition('MENU'); }
+  if (e.key==='Escape' && gs==='MODESELECT'){ modeSelScrollX=0; doTransition('MENU'); }
   if (e.key==='Escape' && gs==='QUESTS')    { doTransition(questsReturnState||'MENU'); questsReturnState='MENU'; }
   if (e.key==='Escape' && gs==='ABOUT')     { doTransition('MENU'); }
   if (e.key==='Escape' && gs==='CONTROLS')  { doTransition('MENU'); }
@@ -4166,6 +4166,8 @@ let levelXpOpen=false;
 let optionsScroll=0, optionsTouchY=null;
 let settingsScroll=0, settingsTouchY=null;
 let socialTouchY=null;
+let modeSelTouchX=null;
+let modeSelScrollX=0, modeSelContentW=LW;
 let profileScroll=0;
 let profileViewH=402, profileContentH=620;
 function minProfileScroll(){ return Math.min(0, profileViewH-profileContentH); }
