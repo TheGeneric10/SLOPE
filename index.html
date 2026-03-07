@@ -653,7 +653,7 @@ function drawPlayerCardPopup(t){
   const status=getStatusValue();
   ctx.save();
   ctx.fillStyle='rgba(0,0,0,0.74)'; ctx.fillRect(0,0,LW,LH);
-  const w=322,h=250,x=(LW-w)/2,y=(LH-h)/2;
+  const w=322,h=262,x=(LW-w)/2,y=(LH-h)/2;
   ctx.fillStyle='rgba(5,12,18,0.98)'; ctx.fillRect(x,y,w,h);
   ctx.strokeStyle='rgba(0,245,255,0.45)'; ctx.lineWidth=2; glow(CFG.CY,12); ctx.strokeRect(x,y,w,h);
   BTNS.playerCardClose={x:x+w-34,y:y+8,w:24,h:24};
@@ -665,27 +665,27 @@ function drawPlayerCardPopup(t){
     if (playerCardPopup.lite) {
       BTNS.playerCardEdit=null; BTNS.playerCardFav=null; BTNS.playerCardFind=null;
     } else {
-      BTNS.playerCardEdit={x:x+10,y:y+10,w:56,h:24};
-      BTNS.playerCardFav={x:x+72,y:y+10,w:28,h:24};
-      BTNS.playerCardFind={x:x+106,y:y+10,w:56,h:24};
-      drawNeonBtn(BTNS.playerCardEdit.x,BTNS.playerCardEdit.y,56,24,CFG.CY,'EDIT',8,1,0);
-      drawNeonBtn(BTNS.playerCardFav.x,BTNS.playerCardFav.y,28,24,playerCardPopup.favorite?'#ff9a1a':CFG.YL,playerCardPopup.favorite?'★':'☆',10,1,0);
-      drawNeonBtn(BTNS.playerCardFind.x,BTNS.playerCardFind.y,56,24,CFG.GR,'FIND',8,1,0);
+      BTNS.playerCardEdit={x:x+10,y:y+10,w:62,h:24};
+      BTNS.playerCardFav={x:x+78,y:y+10,w:30,h:24};
+      BTNS.playerCardFind={x:x+114,y:y+10,w:62,h:24};
+      drawNeonBtn(BTNS.playerCardEdit.x,BTNS.playerCardEdit.y,62,24,CFG.CY,'EDIT',8,1,0);
+      drawNeonBtn(BTNS.playerCardFav.x,BTNS.playerCardFav.y,30,24,playerCardPopup.favorite?'#ff9a1a':CFG.YL,playerCardPopup.favorite?'★':'☆',10,1,0);
+      drawNeonBtn(BTNS.playerCardFind.x,BTNS.playerCardFind.y,62,24,CFG.GR,'FIND',8,1,0);
     }
   } else {
     BTNS.playerCardEdit=null; BTNS.playerCardFind=null;
-    BTNS.playerCardFav={x:x+146,y:y+10,w:28,h:24};
-    BTNS.playerCardFollow={x:x+180,y:y+10,w:74,h:24};
+    BTNS.playerCardFav={x:x+132,y:y+10,w:30,h:24};
+    BTNS.playerCardFollow={x:x+168,y:y+10,w:88,h:24};
     BTNS.playerCardUnfriend=null;
     let actionLabel='ADD FRIEND';
     let actionCol=CFG.GR;
     if (rel.incoming) { actionLabel='VIEW FRIEND REQUEST'; actionCol=CFG.YL; }
     else if (rel.outgoing) { actionLabel='CANCEL FRIEND REQUEST'; actionCol=CFG.PK; }
     else if (rel.friend) { actionLabel='FRIEND'; actionCol=CFG.CY; }
-    BTNS.playerCardAdd={x:x+10,y:y+10,w:130,h:24};
-    drawNeonBtn(BTNS.playerCardAdd.x,BTNS.playerCardAdd.y,130,24,actionCol,actionLabel,7,1,Math.sin(t*2));
-    drawNeonBtn(BTNS.playerCardFav.x,BTNS.playerCardFav.y,28,24,rel.favorite?'#ff9a1a':CFG.YL,rel.favorite?'★':'☆',10,1,0);
-    drawNeonBtn(BTNS.playerCardFollow.x,BTNS.playerCardFollow.y,74,24,rel.following?CFG.PK:CFG.CY,rel.following?'UNFOLLOW':'FOLLOW',8,1,0);
+    BTNS.playerCardAdd={x:x+10,y:y+10,w:116,h:24};
+    drawNeonBtn(BTNS.playerCardAdd.x,BTNS.playerCardAdd.y,116,24,actionCol,actionLabel,7,1,Math.sin(t*2));
+    drawNeonBtn(BTNS.playerCardFav.x,BTNS.playerCardFav.y,30,24,rel.favorite?'#ff9a1a':CFG.YL,rel.favorite?'★':'☆',10,1,0);
+    drawNeonBtn(BTNS.playerCardFollow.x,BTNS.playerCardFollow.y,88,24,rel.following?CFG.PK:CFG.CY,rel.following?'UNFOLLOW':'FOLLOW',8,1,0);
     if (rel.friend && playerCardFriendMenu.open) {
       const mx=x+10,my=y+38,mw=130,mh=50;
       ctx.fillStyle='rgba(0,0,0,0.92)'; ctx.fillRect(mx,my,mw,mh);
@@ -699,7 +699,7 @@ function drawPlayerCardPopup(t){
   }
 
   const name=String((playerCardPopup.isSelf?(auth&&auth.name):cardUser.name)||'Player');
-  const pfpX=x+w-48, pfpY=y+58, r=22;
+  const pfpX=x+w-48, pfpY=y+68, r=22;
   const cardAvatar=playerCardPopup.isSelf?String(profileAvatar||''):String(cardUser.avatar||'');
   if (cardAvatar) {
     const img=new Image(); img.src=cardAvatar;
@@ -1051,7 +1051,11 @@ function handleTap(e) {
   }
   if (gs === 'LEVELS') {
     if (hitBtn(p,BTNS.levelBack)) { SFX.click(); levelXpOpen=false; doTransition(levelsReturnState||'MENU'); levelsReturnState='MENU'; return; }
-    if (hitBtn(p,BTNS.levelClaim)) { SFX.click(); rewardLevel(currentLevel()); return; }
+    if (hitBtn(p,BTNS.levelClaim)) {
+      const nextTier=getNextClaimableTier();
+      if (nextTier!==null) { SFX.click(); rewardLevel(nextTier); }
+      return;
+    }
     if (hitBtn(p,BTNS.levelXpOpen)) { SFX.click(); levelXpOpen=!levelXpOpen; return; }
     if (levelXpOpen) { levelXpOpen=false; return; }
     return;
@@ -2333,6 +2337,10 @@ function randPwrKey() {
     if (adventureStage>=5 && Math.random()<0.28) return 'MINI_JETPACK';
     pool=pool.filter(k=>k!=='BAD_LUCK');
     return pool[rndI(0,pool.length-1)];
+  }
+
+  if (gameMode==='NEON_RUSH') {
+    return 'SICK';
   }
 
   if (gameMode==='LTM') {
@@ -3945,7 +3953,7 @@ function drawLevelsScreen(t){
     ctx.restore();
   }
 
-  const tiers=[1,5,10,15,20,25,30,35,40,45,50,60,70,80,90,100];
+  const tiers=LEVEL_TIER_STEPS;
   const gx=26,gy=110,gw=76,gh=56,gap=8;
   tiers.forEach((lv,i)=>{
     const col=i%4,row=Math.floor(i/4);
@@ -3959,8 +3967,9 @@ function drawLevelsScreen(t){
     setFont(8,'700',"'Share Tech Mono',monospace"); noGlow();
     txt(claimed?'CLAIMED':(unlocked?'UNLOCKED':'LOCKED'),x+gw/2,y+38,claimed?'#39ff14':'#b7d9ea');
   });
+  const nextTier=getNextClaimableTier();
   BTNS.levelClaim={x:26,y:LH-84,w:144,h:30};
-  drawNeonBtn(BTNS.levelClaim.x,BTNS.levelClaim.y,BTNS.levelClaim.w,BTNS.levelClaim.h,'#ffd84d',`CLAIM LV ${currentLevel()}`,9,1,Math.sin(t*2));
+  drawNeonBtn(BTNS.levelClaim.x,BTNS.levelClaim.y,BTNS.levelClaim.w,BTNS.levelClaim.h,nextTier!==null?'#ffd84d':'#4a5a66',nextTier!==null?'CLAIM NEXT TIER':'NEXT TIER LOCKED',9,1,Math.sin(t*2));
   BTNS.levelBack={x:LW-170,y:LH-84,w:144,h:30};
   drawNeonBtn(BTNS.levelBack.x,BTNS.levelBack.y,BTNS.levelBack.w,BTNS.levelBack.h,CFG.PK,'← BACK',10,1,Math.sin(t*2));
   ctx.restore();
@@ -4518,6 +4527,14 @@ function totalXpForLevel(level){ let t=0; for (let i=1;i<level;i++) t+=xpRequire
 function levelFromXp(xp){ let lvl=1, cur=Math.max(0,Number(xp)||0); while (lvl<MAX_LEVEL){ const need=xpRequiredForLevel(lvl); if (cur<need) break; cur-=need; lvl++; } return lvl; }
 function currentLevel(){ return levelFromXp(levelXp); }
 function levelProgress(){ const lvl=currentLevel(); if (lvl>=MAX_LEVEL) return {lvl,cur:xpRequiredForLevel(MAX_LEVEL),need:xpRequiredForLevel(MAX_LEVEL),pct:1}; const base=totalXpForLevel(lvl); const cur=Math.max(0,levelXp-base); const need=xpRequiredForLevel(lvl); return {lvl,cur,need,pct:clamp(cur/Math.max(1,need),0,1)}; }
+const LEVEL_TIER_STEPS=[1,5,10,15,20,25,30,35,40,45,50,60,70,80,90,100];
+function getNextClaimableTier(){
+  const lvl=currentLevel();
+  for (const tier of LEVEL_TIER_STEPS) {
+    if (lvl>=tier && !claimedLevelRewards.includes(tier)) return tier;
+  }
+  return null;
+}
 
 const LEVEL_SPECIAL_REWARDS={
   1:{title:'Starter reward pack',skin:'default'},5:{title:'Rookie Glow title'},10:{skin:'arctic'},15:{aura:'static_ring'},20:{theme:'retrowave'},
