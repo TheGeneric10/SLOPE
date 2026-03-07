@@ -5409,7 +5409,8 @@ const FIREBASE_CONFIG={
 const CLOUD_INFO_ROOT='SLOPE/user/encrypted/info';
 const CLOUD_SLOPE_ROOT='SLOPE/users';
 const CLOUD_LEADERBOARD_ROOT='SLOPE/leaderboards';
-const CLOUD_INFO_ROOT_FALLBACKS=[CLOUD_INFO_ROOT];
+const CLOUD_SOCIAL_INFO_USERS_ROOT='TheGeneric/privacy/user/social/info/users';
+const CLOUD_INFO_ROOT_FALLBACKS=[CLOUD_INFO_ROOT,CLOUD_SOCIAL_INFO_USERS_ROOT];
 
 let fbReady=false, fbAuth=null, fbDb=null, fbUser=null;
 let cloudSyncTimer=0;
@@ -6110,7 +6111,10 @@ async function writeCloudUserInfo(extra={}) {
     publicFollowing:clamp(Number(publicProfilePrefs.following||0),0,2),
     ...extra,
   };
-  await fbDb.ref(`${cloudProfileRoot}/${fbUser.uid}`).update(payload);
+  await Promise.all([
+    fbDb.ref(`${cloudProfileRoot}/${fbUser.uid}`).update(payload),
+    fbDb.ref(`${CLOUD_SOCIAL_INFO_USERS_ROOT}/${fbUser.uid}`).update({...payload,cloudRoot:CLOUD_SOCIAL_INFO_USERS_ROOT}),
+  ]);
   await syncSlopeMirror({updatedAt:String(payload.updatedAt)});
 }
 
@@ -6905,6 +6909,7 @@ async function beginDeleteAccountFlow(){
         await Promise.allSettled([
           fbDb.ref(`${CLOUD_SLOPE_ROOT}/${uid}`).remove(),
           fbDb.ref(`${CLOUD_INFO_ROOT}/${uid}`).remove(),
+          fbDb.ref(`${CLOUD_SOCIAL_INFO_USERS_ROOT}/${uid}`).remove(),
           fbDb.ref(`${CLOUD_LEADERBOARD_ROOT}/global/${uid}`).remove(),
           fbDb.ref(`${CLOUD_LEADERBOARD_ROOT}/endless/${uid}`).remove(),
           fbDb.ref(`${CLOUD_LEADERBOARD_ROOT}/adventure/${uid}`).remove(),
@@ -7092,10 +7097,39 @@ function mapSocialSnapToList(snap,idxMap){
 async function fetchUserIndexMap(){
   if (!fbReady || !fbDb) return {};
   try {
-    const snap=await fbDb.ref(CLOUD_SLOPE_ROOT).get();
-    const all=snap&&snap.val?snap.val():{};
+    const [socialSnap,slopeSnap]=await Promise.all([
+      fbDb.ref(CLOUD_SOCIAL_INFO_USERS_ROOT).get(),
+      fbDb.ref(CLOUD_SLOPE_ROOT).get(),
+    ]);
+    const socialAll=socialSnap&&socialSnap.val?socialSnap.val():{};
+    const slopeAll=slopeSnap&&slopeSnap.val?slopeSnap.val():{};
     const out={};
-    Object.keys(all||{}).forEach(uid=>{ const u=all[uid]||{}; out[uid]={uid,name:u.displayName||u.name||u.email||'Runner',avatar:u.pfpLink||u.avatar||'',status:String(u.status||'offline').toLowerCase(),statusPref:String(u.statusPref||u.status||'online').toLowerCase(),lastSeen:Number(u.lastSeen||0),bestScore:Number(u.bestScore||0),bio:String(u.bio||''),selectedSkin:String(u.selectedSkin||u.skin||''),selectedAura:String(u.selectedAura||u.aura||''),selectedTheme:String(u.selectedTheme||u.theme||''),createdAt:Number(u.createdAt||0),admin:(u.admin===true||String(u.admin)==='true'),verified:(u.verified===true||String(u.verified)==='true'),publicBio:clamp(Number(u.publicBio||2),0,2),publicFriends:clamp(Number(u.publicFriends||2),0,2),publicFollowers:clamp(Number(u.publicFollowers||2),0,2),publicFollowing:clamp(Number(u.publicFollowing||2),0,2)}; });
+    const upsert=(uid,row)=>{
+      const prev=out[uid]||{};
+      const u=row||{};
+      out[uid]={
+        uid,
+        name:u.displayName||u.name||u.email||prev.name||'Runner',
+        avatar:u.pfpLink||u.avatar||prev.avatar||'',
+        status:String(u.status||prev.status||'offline').toLowerCase(),
+        statusPref:String(u.statusPref||u.status||prev.statusPref||'online').toLowerCase(),
+        lastSeen:Number(u.lastSeen||prev.lastSeen||0),
+        bestScore:Number(u.bestScore||prev.bestScore||0),
+        bio:String(u.bio||prev.bio||''),
+        selectedSkin:String(u.selectedSkin||u.skin||prev.selectedSkin||''),
+        selectedAura:String(u.selectedAura||u.aura||prev.selectedAura||''),
+        selectedTheme:String(u.selectedTheme||u.theme||prev.selectedTheme||''),
+        createdAt:Number(u.createdAt||prev.createdAt||0),
+        admin:(u.admin===true||String(u.admin)==='true'||prev.admin===true),
+        verified:(u.verified===true||String(u.verified)==='true'||prev.verified===true),
+        publicBio:clamp(Number.isFinite(Number(u.publicBio))?Number(u.publicBio):(Number.isFinite(Number(prev.publicBio))?Number(prev.publicBio):2),0,2),
+        publicFriends:clamp(Number.isFinite(Number(u.publicFriends))?Number(u.publicFriends):(Number.isFinite(Number(prev.publicFriends))?Number(prev.publicFriends):2),0,2),
+        publicFollowers:clamp(Number.isFinite(Number(u.publicFollowers))?Number(u.publicFollowers):(Number.isFinite(Number(prev.publicFollowers))?Number(prev.publicFollowers):2),0,2),
+        publicFollowing:clamp(Number.isFinite(Number(u.publicFollowing))?Number(u.publicFollowing):(Number.isFinite(Number(prev.publicFollowing))?Number(prev.publicFollowing):2),0,2),
+      };
+    };
+    Object.keys(slopeAll||{}).forEach(uid=>upsert(uid,slopeAll[uid]));
+    Object.keys(socialAll||{}).forEach(uid=>upsert(uid,socialAll[uid]));
     return out;
   } catch(e){ return {}; }
 }
@@ -7177,13 +7211,12 @@ async function openMiniProfileByUsername(raw){
   pendingFoundProfile=null;
   openActionPopup('FIND USER','Searching user...',true,true);
   try {
-    const snap=await fbDb.ref(CLOUD_SLOPE_ROOT).get();
-    const all=snap&&snap.val?snap.val():{};
+    const idx=await fetchUserIndexMap();
     let foundUid='';
-    Object.keys(all||{}).some(uid=>{ const u=all[uid]||{}; const nm=String(u.displayName||u.name||u.email||'').toLowerCase(); if (nm===q) { foundUid=uid; return true; } return false; });
+    Object.keys(idx||{}).some(uid=>{ const u=idx[uid]||{}; const nm=String(u.name||'').toLowerCase(); if (nm===q) { foundUid=uid; return true; } return false; });
     if (!foundUid) { openActionPopup('FIND USER','Cannot find user.',false,false); return false; }
-    const u=all[foundUid]||{};
-    pendingFoundProfile={uid:foundUid,name:String(u.displayName||u.name||'Runner'),avatar:String(u.pfpLink||u.avatar||''),status:String(u.status||'offline'),statusPref:String(u.statusPref||u.status||'online'),lastSeen:Number(u.lastSeen||0),bio:String(u.bio||''),bestScore:Number(u.bestScore||0),selectedSkin:String(u.selectedSkin||u.skin||''),selectedAura:String(u.selectedAura||u.aura||''),selectedTheme:String(u.selectedTheme||u.theme||''),createdAt:Number(u.createdAt||0),admin:(u.admin===true||String(u.admin)==='true'),verified:(u.verified===true||String(u.verified)==='true'),publicBio:clamp(Number(u.publicBio||2),0,2),publicFriends:clamp(Number(u.publicFriends||2),0,2),publicFollowers:clamp(Number(u.publicFollowers||2),0,2),publicFollowing:clamp(Number(u.publicFollowing||2),0,2)};
+    const u=idx[foundUid]||{};
+    pendingFoundProfile={uid:foundUid,name:String(u.name||'Runner'),avatar:String(u.avatar||''),status:String(u.status||'offline'),statusPref:String(u.statusPref||u.status||'online'),lastSeen:Number(u.lastSeen||0),bio:String(u.bio||''),bestScore:Number(u.bestScore||0),selectedSkin:String(u.selectedSkin||u.skin||''),selectedAura:String(u.selectedAura||u.aura||''),selectedTheme:String(u.selectedTheme||u.theme||''),createdAt:Number(u.createdAt||0),admin:(u.admin===true||String(u.admin)==='true'),verified:(u.verified===true||String(u.verified)==='true'),publicBio:clamp(Number(u.publicBio||2),0,2),publicFriends:clamp(Number(u.publicFriends||2),0,2),publicFollowers:clamp(Number(u.publicFollowers||2),0,2),publicFollowing:clamp(Number(u.publicFollowing||2),0,2)};
     openActionPopup('FIND USER',`Found: ${pendingFoundProfile.name} • Best ${Math.floor(pendingFoundProfile.bestScore||0)}`,true,false,()=>{
       if (!pendingFoundProfile) return;
       playerCardPopup.active=true;
