@@ -261,6 +261,7 @@ function nudgeUiScroll(dir){
   if (gs==='QUESTS') { questScroll=clamp(questScroll+amt,minQuestScroll(),0); return true; }
   if (gs==='LEADERBOARD') { leaderboardScroll=clamp(leaderboardScroll+amt,minLeaderboardScroll(),0); return true; }
   if (gs==='PROFILE') { profileScroll=clamp(profileScroll+amt,minProfileScroll(),0); return true; }
+  if (gs==='MODESELECT') { const minX=Math.min(0,LW-modeSelContentW); modeSelScrollX=clamp(modeSelScrollX+amt*2,minX,0); return true; }
   if (gs==='SHOP') { shopScroll=clamp(shopScroll+amt,minShopScroll(),0); return true; }
   if (gs==='SETTINGS') { settingsScroll=clamp(settingsScroll+amt,minSettingsScroll(),0); return true; }
   if (gs==='OPTIONS') { optionsScroll=clamp(optionsScroll+amt,minOptionsScroll(),0); return true; }
@@ -1238,6 +1239,7 @@ canvas.addEventListener('touchstart', e => {
   adminLtmTouchY = t.clientY;
   shopTouchY = t.clientY;
   socialTouchY = t.clientY;
+  modeSelTouchX = t.clientX;
   touchSwipe = 0; touchSwipeTarget = 0;
 }, { passive:false });
 
@@ -1247,6 +1249,17 @@ canvas.addEventListener('touchmove', e => {
   if (usingTouchJoy) return;
   if (!touchActive) return;
 
+  if (gs==='MODESELECT') {
+    const t=e.touches[0];
+    if (modeSelTouchX!==null) {
+      const dx=t.clientX-modeSelTouchX;
+      if (Math.abs(dx)>2) touchMoved=true;
+      const minX=Math.min(0,LW-modeSelContentW);
+      modeSelScrollX=clamp(modeSelScrollX+dx,minX,0);
+    }
+    modeSelTouchX=t.clientX;
+    return;
+  }
   if (gs==='QUESTS') {
     const t=e.touches[0];
     if (questTouchY!==null) {
@@ -1358,47 +1371,35 @@ canvas.addEventListener('touchmove', e => {
 
 canvas.addEventListener('touchend', e => {
   e.preventDefault();
+  disableUiNavFromPointer();
+  if (Date.now() - _lastTouchEnd < 450) return;
   _lastTouchEnd = Date.now();
-  if (!touchMoved) {
-    handleTap(e);
-  }
-  touchActive = false; touchSwipe = 0; touchSwipeTarget = 0; touchMoved = false; questTouchY = null; profileTouchY=null; leaderboardTouchY=null; adminLtmTouchY=null; shopTouchY=null; settingsTouchY=null; optionsTouchY=null; socialTouchY=null; joyL=false; joyR=false; usingTouchJoy=false; profileAvatarPressing=false; profileAvatarHoldFX=false; stopProfileCropInteraction();
-}, { passive:false });
-
-canvas.addEventListener('touchcancel', () => {
-  touchActive = false; touchSwipe = 0; touchSwipeTarget = 0; touchMoved = false; questTouchY = null; profileTouchY=null; leaderboardTouchY=null; adminLtmTouchY=null; shopTouchY=null; settingsTouchY=null; optionsTouchY=null; socialTouchY=null; joyL=false; joyR=false; usingTouchJoy=false; profileAvatarPressing=false; profileAvatarHoldFX=false; stopProfileCropInteraction();
+  touchActive = false; touchSwipe = 0; touchSwipeTarget = 0; touchMoved = false; questTouchY = null; profileTouchY=null; leaderboardTouchY=null; adminLtmTouchY=null; shopTouchY=null; settingsTouchY=null; optionsTouchY=null; socialTouchY=null; modeSelTouchX=null; joyL=false; joyR=false; usingTouchJoy=false; profileAvatarPressing=false; profileAvatarHoldFX=false; stopProfileCropInteraction();
+  handleTap(e);
 });
 
-// Mouse (desktop)
+canvas.addEventListener('touchcancel', () => {
+  touchActive = false; touchSwipe = 0; touchSwipeTarget = 0; touchMoved = false; questTouchY = null; profileTouchY=null; leaderboardTouchY=null; adminLtmTouchY=null; shopTouchY=null; settingsTouchY=null; optionsTouchY=null; socialTouchY=null; modeSelTouchX=null; joyL=false; joyR=false; usingTouchJoy=false; profileAvatarPressing=false; profileAvatarHoldFX=false; stopProfileCropInteraction();
+});
+
+// Mouse fallback
 canvas.addEventListener('mousedown', e => {
   disableUiNavFromPointer();
-  markPresenceActivity('mousedown');
-  if (gs==='PROFILE') {
+  touchActive=true; touchMoved=false; touchStartX=e.clientX; touchCurrentX=e.clientX;
+  if (gs==='PROFILE' && profileUploadState.active && profileUploadState.mode==='preview') {
     const p=getCanvasXY(e);
-    if (BTNS.profileAvatar) {
-      const dx=p.x-BTNS.profileAvatar.cx, dy=p.y-BTNS.profileAvatar.cy;
-      if ((dx*dx+dy*dy) <= (BTNS.profileAvatar.r*BTNS.profileAvatar.r)) { profileAvatarPressing=true; profileAvatarPressStart=Date.now(); profileAvatarHoldFX=false; }
+    const frame=220, fx=(LW-frame)/2, fy=((LH-410)/2)+44;
+    if (p.x>=fx && p.x<=fx+frame && p.y>=fy && p.y<=fy+frame) {
+      profileUploadState.drag=true; profileUploadState.lastX=p.x; profileUploadState.lastY=p.y;
     }
-    if (profileUploadState.active && profileUploadState.mode==='preview') {
-      const frame=220, fx=(LW-frame)/2, fy=((LH-410)/2)+44;
-      if (p.x>=fx && p.x<=fx+frame && p.y>=fy && p.y<=fy+frame) { profileUploadState.drag=true; profileUploadState.lastX=p.x; profileUploadState.lastY=p.y; }
-    }
-  }
-  if (gs==='PLAY' || gs==='PAUSE') {
-    touchActive = true; touchMoved = false;
-    touchStartX = e.clientX; touchCurrentX = e.clientX; touchSwipe = 0;
   }
 });
 canvas.addEventListener('mousemove', e => {
-  disableUiNavFromPointer();
-  markPresenceActivity('mousemove');
-  const mp=getCanvasXY(e);
-  mouseCanvasPos.x=mp.x; mouseCanvasPos.y=mp.y;
   if (gs==='PROFILE' && profileUploadState.active && profileUploadState.mode==='preview' && profileUploadState.drag) {
-    const p=mp;
-    profileUploadState.offX += p.x-profileUploadState.lastX;
-    profileUploadState.offY += p.y-profileUploadState.lastY;
-    profileUploadState.lastX=p.x; profileUploadState.lastY=p.y;
+    const np=getCanvasXY(e);
+    profileUploadState.offX += np.x-profileUploadState.lastX;
+    profileUploadState.offY += np.y-profileUploadState.lastY;
+    profileUploadState.lastX=np.x; profileUploadState.lastY=np.y;
     clampProfileUploadOffsets(profileUploadState,220);
     return;
   }
@@ -1421,6 +1422,12 @@ document.addEventListener('click', e => {
 
 document.addEventListener('wheel', e => {
   disableUiNavFromPointer();
+  if (gs==='MODESELECT') {
+    e.preventDefault();
+    const minX=Math.min(0,LW-modeSelContentW);
+    modeSelScrollX=clamp(modeSelScrollX - e.deltaY*0.5 - e.deltaX*0.8,minX,0);
+    return;
+  }
   if (gs==='QUESTS') {
     e.preventDefault();
     questScroll=clamp(questScroll - e.deltaY*0.6, minQuestScroll(), 0);
@@ -2599,10 +2606,16 @@ function drawTerrain() {
   if (gameMode==='SLOPE_BRIDGE' && bridgeLaneCount>1) {
     ctx.save();
     const cols=['rgba(255,160,40,0.45)','rgba(255,90,210,0.4)','rgba(120,214,255,0.35)'];
-    for (let lane=1; lane<bridgeLaneCount; lane++) {
+    for (let lane=0; lane<bridgeLaneCount; lane++) {
       ctx.beginPath();
       segs.forEach((sg,i)=>{ const cx=(sg.lx+sg.rx)/2 + (lane-(bridgeLaneCount-1)/2)*18; i===0?ctx.moveTo(cx,sg.y):ctx.lineTo(cx,sg.y); });
-      ctx.strokeStyle=cols[(lane-1)%cols.length]; ctx.lineWidth=1.4; glow(cols[(lane-1)%cols.length],10); ctx.stroke();
+      const isCurrent=lane===bridgeCurrentLayer;
+      ctx.strokeStyle=cols[lane%cols.length]; ctx.lineWidth=isCurrent?2.1:1.2; glow(cols[lane%cols.length],isCurrent?12:5); ctx.stroke();
+      if (!isCurrent) {
+        ctx.globalAlpha=0.18; ctx.fillStyle='#000';
+        segs.forEach(sg=>ctx.fillRect(((sg.lx+sg.rx)/2 + (lane-(bridgeLaneCount-1)/2)*18)-10,sg.y-2,20,CFG.SEG_H+4));
+        ctx.globalAlpha=1;
+      }
     }
     ctx.restore();
   }
@@ -2761,23 +2774,15 @@ function drawHUD() {
   setFont(22,'900'); glow(CFG.CY,14); txt(`${Math.floor(score)}${multiStr}`,0,22,CFG.CY);
   ctx.restore();
 
-  // EXP + Gem bank
+  // Gem bank strip (XP removed from HUD strip; XP shown on pickup)
   {
-    const xpVal=Math.floor(Math.max(0,Number(levelXp||0)));
     const gbW=196, gbH=18, gbX=(LW-gbW)/2, gbY=pdY+42;
     ctx.save();
     ctx.fillStyle='rgba(0,245,255,0.06)'; ctx.fillRect(gbX,gbY,gbW,gbH);
     ctx.strokeStyle='rgba(0,245,255,0.35)'; ctx.lineWidth=1; glow(CFG.CY,6); ctx.strokeRect(gbX,gbY,gbW,gbH);
     setFont(8,'700',"'Share Tech Mono',monospace"); noGlow();
-    txt('XP',gbX+12,gbY+13,'#ffe792','left');
-    setFont(9,'900'); glow('#ffe792',8); txt(`${xpVal}`,gbX+28,gbY+13,'#ffe792','left');
-    setFont(7,'700',"'Share Tech Mono',monospace"); noGlow(); txt('|',gbX+94,gbY+13,'rgba(180,230,255,0.55)','left');
-    ctx.fillStyle=CFG.CY;
-    ctx.beginPath();
-    ctx.moveTo(gbX+108,gbY+3); ctx.lineTo(gbX+112,gbY+9); ctx.lineTo(gbX+108,gbY+15); ctx.lineTo(gbX+104,gbY+9);
-    ctx.closePath();
-    ctx.fill();
-    setFont(9,'900'); glow(CFG.CY,8); txt(`${totalGems}`,gbX+120,gbY+13,CFG.CY,'left');
+    txt('GEMS',gbX+18,gbY+13,'#ffe792','left');
+    setFont(9,'900'); glow(CFG.CY,8); txt(`${totalGems}`,gbX+56,gbY+13,CFG.CY,'left');
     setFont(7,'700',"'Share Tech Mono',monospace"); noGlow();
     txt(`+${gemsCollected}`,gbX+gbW-8,gbY+13,CFG.YL,'right');
     ctx.restore();
@@ -2795,7 +2800,8 @@ function drawHUD() {
     const st=currentStageConfig();
     const stCol=gameMode==='IMPOSSIBLE'?'#ff4455':(gameMode==='SLOPE_BRIDGE'?'#7cd6ff':CFG.GR);
     glow(stCol,12);
-    txt(`${st.name} · ${st.label}`,LW/2,pdY+68,stCol); ctx.restore();
+    ctx.fillStyle='rgba(8,18,22,0.72)'; ctx.fillRect(LW/2-110,pdY+60,220,18);
+    txt(`${st.name} · ${st.label}`,LW/2,pdY+73,stCol); ctx.restore();
   }
 
   // Lives (right side)
@@ -3480,7 +3486,10 @@ function drawModeSelect(t) {
   const ltmVisible=isLtmModeVisible();
   const showPreview=!!(isSignedIn && isAdminUser);
   const cardCount=3+(ltmVisible?1:0)+(showPreview?1:0);
-  const startX=(LW-(cardW*cardCount+gap*(cardCount-1)))/2;
+  const totalCardW=cardW*cardCount+gap*(cardCount-1);
+  const startX=(LW-totalCardW)/2 + modeSelScrollX;
+  modeSelContentW=Math.max(LW,totalCardW+24);
+  modeSelScrollX=clamp(modeSelScrollX,Math.min(0,LW-modeSelContentW),0);
 
   const cards=[
     {key:'modeEndless',col:CFG.CY,title:'ENDLESS',sub:'CLASSIC',icon:'∞',feats:['Classic run','No cap','Score chase'],btn:'PLAY'},
@@ -3561,6 +3570,14 @@ function drawModeSelect(t) {
   drawNeonBtn(BTNS.modeNeonRush.x,BTNS.modeNeonRush.y,90,26,CFG.YL,'PLAY',10,1,Math.sin(t*3));
   ctx.restore();
 
+  if (modeSelContentW>LW+2) {
+    const sbY=nrY+nrH+8, sbX=24, sbW=LW-48, thumbW=Math.max(42,(LW/modeSelContentW)*sbW);
+    const minX=Math.min(0,LW-modeSelContentW);
+    const frac=minX<0?((-modeSelScrollX)/Math.abs(minX)):0;
+    const tx=sbX + frac*(sbW-thumbW);
+    ctx.fillStyle='rgba(0,245,255,0.18)'; ctx.fillRect(sbX,sbY,sbW,4);
+    ctx.fillStyle='rgba(0,245,255,0.72)'; ctx.fillRect(tx,sbY,thumbW,4);
+  }
   const bW=130,bH=34,bX=(LW-bW)/2,bY=LH-46;
   BTNS.back={x:bX,y:bY,w:bW,h:bH};
   drawNeonBtn(bX,bY,bW,bH,CFG.PK,'← BACK',11,0.85,Math.sin(t*2));
@@ -4247,10 +4264,10 @@ function minShopScroll(){ return Math.min(0, shopViewH-shopContentH); }
 function shuffleShop() {
   if (gameMode==='SLOPE_BRIDGE') {
     shopOffers=[
-      {key:'ROTATION',label:'ROTATION',icon:'⟳',cost:260,desc:'Cinematic orientation shift'},
-      {key:'BRIDGE',label:'BRIDGE+',icon:'🧱',cost:320,desc:'Expand lane puzzle space'},
       {key:'SHIELD',label:'MINI SHIELD',icon:'🛡',cost:180,desc:'30s safety shell'},
       {key:'BOOST',label:'+10 MULTI',icon:'⚡',cost:260,desc:'Bridge score surge'},
+      {key:'MAGNET',label:'MAGNET',icon:'✦',cost:220,desc:'Pull gems & powerups'},
+      {key:'IMMUNITY',label:'IMMUNITY',icon:'🟢',cost:240,desc:'10s no-collision window'},
     ];
   } else {
     const pool=[...SHOP_CATALOG].sort(()=>Math.random()-0.5);
@@ -7201,7 +7218,7 @@ const LEADERBOARD_TABS=['GLOBAL','ENDLESS','ADVENTURE','IMPOSSIBLE','LTM'];
 let ltmRotationIndex=0;
 let ltmStage=0, ltmStageTimer=0;
 let bridgeStage=0, bridgeStageTimer=0;
-let bridgeLaneCount=1, bridgeRotateMode=0, bridgeZoomOut=1, bridgeTeleportCooldown=0;
+let bridgeLaneCount=1, bridgeCurrentLayer=0, bridgeRotateMode=0, bridgeZoomOut=1, bridgeTeleportCooldown=0;
 let bridgeIntroT=0, bridgeIntroActive=false, bridgeObstacleDelay=0, bridgeWarpFx=0;
 let adminLtmScroll=0, adminLtmViewH=0, adminLtmContentH=0;
 let noAdsPopup=false;
@@ -7713,7 +7730,7 @@ function goMenu() {
   gems.length=0; powerups.length=0; obstacles.length=0;
   transDir=1; transAlpha=1;
   activePwr=null; pwrTimer=0; worldSpeedMult=1;
-  immunityActive=false; immunityTimer=0; obstacleClearTimer=0; badLuckActive=false; badLuckTimer=0; badLuckSpawnT=0; gemDoubleActive=false; gemDoubleTimer=0; gemBoostMult=1; gemDropActive=false; gemDropTimer=0; gemDropSpawnTimer=0; bridgeStage=0; bridgeStageTimer=0; bridgeLaneCount=1; bridgeRotateMode=0; bridgeZoomOut=1; bridgeTeleportCooldown=0; bridgeIntroT=0; bridgeIntroActive=false; bridgeObstacleDelay=0; bridgeWarpFx=0;
+  immunityActive=false; immunityTimer=0; obstacleClearTimer=0; badLuckActive=false; badLuckTimer=0; badLuckSpawnT=0; gemDoubleActive=false; gemDoubleTimer=0; gemBoostMult=1; gemDropActive=false; gemDropTimer=0; gemDropSpawnTimer=0; bridgeStage=0; bridgeStageTimer=0; bridgeLaneCount=1; bridgeCurrentLayer=0; bridgeRotateMode=0; bridgeZoomOut=1; bridgeTeleportCooldown=0; bridgeIntroT=0; bridgeIntroActive=false; bridgeObstacleDelay=0; bridgeWarpFx=0;
   pauseToggleLock=0;
   continueOfferTimer=0;
   shuffleShop();
@@ -7735,7 +7752,7 @@ function startGame(starterPwr=null, forceNoStarter=false) {
   jetpackCount=0; regenUsed=0;
   pwrCounts={JETPACK:0,MAGNET:0,BOOST:0,SHIELD:0,SLOW:0,HEALTH_BOOST:0,MINI_JETPACK:0,NEW_STAGE:0,REGEN:0,X2_GEMS:0,X4_GEMS:0,GEM_DROP:0,BAD_LUCK:0,SICK:0,LTM_SPECIAL:0,ROTATION:0,BRIDGE:0};
   // Adventure setup
-  adventureStage=0; adventureStageTimer=0; impossibleStage=0; ltmStage=0; ltmStageTimer=0; bridgeStage=0; bridgeStageTimer=0; bridgeLaneCount=1; bridgeRotateMode=0; bridgeZoomOut=1; bridgeTeleportCooldown=0; bridgeIntroT=0; bridgeIntroActive=false; bridgeObstacleDelay=0; bridgeWarpFx=0;
+  adventureStage=0; adventureStageTimer=0; impossibleStage=0; ltmStage=0; ltmStageTimer=0; bridgeStage=0; bridgeStageTimer=0; bridgeLaneCount=1; bridgeCurrentLayer=0; bridgeRotateMode=0; bridgeZoomOut=1; bridgeTeleportCooldown=0; bridgeIntroT=0; bridgeIntroActive=false; bridgeObstacleDelay=0; bridgeWarpFx=0;
   if (gameMode==='LTM') {
     if (!navigator.onLine) { addNotif('LTM REQUIRES INTERNET',CFG.PK); gameMode='ENDLESS'; }
     const picked=(ltmSelectedIndex>=0?ltmSelectedIndex:getDailyLtmIndex());
@@ -7791,7 +7808,7 @@ function startGame(starterPwr=null, forceNoStarter=false) {
     } else if (starterPwr==='ROTATION') {
       bridgeRotateMode=(bridgeRotateMode+1)%4; bridgeWarpFx=1;
     } else if (starterPwr==='BRIDGE') {
-      bridgeLaneCount=Math.min(3,bridgeLaneCount+1); terrain.trackW=Math.min(LW*0.82,terrain.trackW+32);
+      bridgeLaneCount=Math.min(3,bridgeLaneCount+1); bridgeCurrentLayer=Math.max(0,bridgeLaneCount-1); terrain.trackW=Math.min(LW*0.82,terrain.trackW+32);
     } else {
       activePwr=starterPwr; pwrTimer=PWR_TYPES[starterPwr]?.dur||5;
       if (starterPwr==='SLOW') worldSpeedMult=0.42;
@@ -7893,6 +7910,7 @@ function triggerBridgeWarp(){
     addNotif('WARP EXIT BOOST!', '#ff9acc');
     player.activateJetpack(5.0);
     worldSpeedMult=Math.max(worldSpeedMult,1.08);
+    bridgeLaneCount=1; bridgeCurrentLayer=0; bridgeZoomOut=1;
   },1000);
 }
 
@@ -8075,7 +8093,9 @@ function collectGem(gem) {
   burst(gem.x,gem.y,gem.type.col,12,180);
   flashAlpha=0.12; flashCol=gem.type.col;
   addFloat(gem.x,gem.y-10,`+${pts}${scoreMultiplier()>1?` ×${scoreMultiplier()}`:''}`,gem.type.col);
+  const xpEarn=Math.max(1,2 + Math.floor(earned*0.8));
   addFloat(gem.x,gem.y-28,`+${earned}◆${gemDoubleActive?`  X${Math.max(2,gemBoostMult)}`:''}`,gem.type.col);
+  addFloat(gem.x,gem.y-42,`+${xpEarn} XP`,'#ffe792');
 }
 
 function collectPwr(pwr) {
@@ -8092,7 +8112,7 @@ function collectPwr(pwr) {
   else if (pwr.key==='REGEN')        { SFX.regen(); collectRegen(pwr.x,pwr.y); pwrCounts.REGEN++; }
   else if (pwr.key==='MINI_JETPACK') { SFX.jetpack(); activateMiniJetpack(); pwrCounts.MINI_JETPACK++; }
   else if (pwr.key==='ROTATION')     { SFX.stage(); bridgeRotateMode=(bridgeRotateMode+1)%4; bridgeWarpFx=1.0; pwrCounts.ROTATION++; stageTransLabel='ROTATION SHIFT'; stageTransT=1.4; addNotif('BRIDGE ROTATION SHIFT!','#7cd6ff'); }
-  else if (pwr.key==='BRIDGE')       { SFX.stage(); bridgeLaneCount=Math.min(3,bridgeLaneCount+1); bridgeZoomOut=1+bridgeLaneCount*0.06; terrain.trackW=Math.min(LW*0.82,terrain.trackW+32); pwrCounts.BRIDGE++; addNotif(`BRIDGE EXPANDED x${bridgeLaneCount}`,'#ff9a34'); }
+  else if (pwr.key==='BRIDGE')       { SFX.stage(); bridgeLaneCount=Math.min(3,bridgeLaneCount+1); bridgeCurrentLayer=Math.max(0,bridgeLaneCount-1); bridgeZoomOut=1+bridgeLaneCount*0.06; terrain.trackW=Math.min(LW*0.82,terrain.trackW+32); pwrCounts.BRIDGE++; addNotif(`BRIDGE EXPANDED x${bridgeLaneCount}`,'#ff9a34'); }
   else if (pwr.key==='NEW_STAGE')    { if (newStageActive) return; SFX.stage(); if (gameMode==='SLOPE_BRIDGE') { advanceBridgeStage(); } else activateNewStagePowerup(); pwrCounts.NEW_STAGE++; }
   else if (pwr.key==='X2_GEMS')      { SFX.pwr(); activateGemDouble(2,10); pwrCounts.X2_GEMS++; }
   else if (pwr.key==='X4_GEMS')      { SFX.pwr(); activateGemDouble(4,8); pwrCounts.X2_GEMS++; }
@@ -8291,9 +8311,9 @@ function drawLtmModeFx(lm,t){
 }
 
 function activateBadLuck() {
-  if (gameMode!=='IMPOSSIBLE') return;
+  if (gameMode!=='IMPOSSIBLE' && gameMode!=='SLOPE_BRIDGE') return;
   badLuckActive=true; badLuckTimer=5.0; badLuckSpawnT=0;
-  addNotif('☠ BAD LUCK! FALLING ROCKS','#ff3333');
+  addNotif(gameMode==='SLOPE_BRIDGE'?'☠ BAD LUCK! BRIDGE PEBBLES':'☠ BAD LUCK! FALLING ROCKS','#ff3333');
   addFloat(player.x,player.y-24,'☠ BAD LUCK','#ff3333');
 }
 
@@ -8900,14 +8920,15 @@ function loop(ts) {
 
   // ── DRAW ────────────────────────────────────────────────────
   if (player.jetpackActive) addShake(2.4,0.05);
-  const targetZoom=(miniJetpackActive||newStageActive)?1.08:(player.jetpackActive?1.04:1);
-  camZoom=lerp(camZoom,targetZoom,dt*3);
+  const baseZoom=(miniJetpackActive||newStageActive)?1.08:(player.jetpackActive?1.04:1);
+  const bridgeZoomTarget=(gameMode==='SLOPE_BRIDGE')?(baseZoom/Math.max(1,bridgeZoomOut)):baseZoom;
+  camZoom=lerp(camZoom,bridgeZoomTarget,dt*3);
   ctx.save(); applyShake();
   const bridgeIntroRot=(gameMode==='SLOPE_BRIDGE'&&bridgeIntroActive&&bridgeIntroT<3)?(-Math.PI/2):0;
   const bridgeTargetRot=bridgeIntroRot + (gameMode==='SLOPE_BRIDGE'?(bridgeRotateMode*(Math.PI/2)):0);
   if (gameMode==='SLOPE_BRIDGE') bridgeZoomOut=lerp(bridgeZoomOut,1+Math.max(0,bridgeLaneCount-1)*0.08,dt*2);
-  if (gameMode==='SLOPE_BRIDGE') camZoom=lerp(camZoom*Math.max(0.96,bridgeZoomOut),camZoom,0.02);
-  if (bridgeTargetRot!==0) { ctx.translate(LW/2,LH/2); ctx.rotate(bridgeTargetRot); ctx.translate(-LW/2,-LH/2); }
+  const bridgeViewOffsetY=(gameMode==='SLOPE_BRIDGE' && bridgeTargetRot!==0)?LH*0.12:0;
+  if (bridgeTargetRot!==0) { ctx.translate(LW/2,LH/2+bridgeViewOffsetY); ctx.rotate(bridgeTargetRot); ctx.translate(-LW/2,-LH/2); }
   if (camZoom!==1) {
     ctx.translate(player.x,player.y);
     ctx.scale(camZoom,camZoom);
