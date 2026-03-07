@@ -5027,7 +5027,7 @@ function handleCharShopTap(p) {
     }
   }
 
-  if (hitBtn(p,BTNS.charRightSkins)) { SFX.click(); charShopActiveTab='skins'; return; }
+  if (hitBtn(p,BTNS.charRightSkins)) { SFX.click(); charShopView='inventory'; charShopInvFilter='default'; charShopInvPage=0; charShopFilterOpen=false; return; }
   const page=SHOP_PAGES.find(v=>v.key===charShopActiveTab)||SHOP_PAGES[0];
   const pageKey=page.key;
   charBtnRects.forEach((r)=>{
@@ -5103,13 +5103,13 @@ function drawCharShop(t) {
       tx+=tw+4;
     });
     BTNS.charRightSkins={x:LW-44,y:10,w:32,h:90};
-    const skinRailOn=charShopActiveTab==='skins';
+    const skinRailOn=(charShopActiveTab==='skins'||isInv);
     ctx.save();
     ctx.fillStyle=skinRailOn?'rgba(255,230,0,0.2)':'rgba(18,30,40,0.75)'; ctx.fillRect(BTNS.charRightSkins.x,BTNS.charRightSkins.y,BTNS.charRightSkins.w,BTNS.charRightSkins.h);
     ctx.strokeStyle=skinRailOn?CFG.YL:'rgba(120,170,210,0.55)'; ctx.lineWidth=1.2; glow(skinRailOn?CFG.YL:CFG.CY,skinRailOn?10:4); ctx.strokeRect(BTNS.charRightSkins.x,BTNS.charRightSkins.y,BTNS.charRightSkins.w,BTNS.charRightSkins.h);
     setFont(12,'900'); glow('#ffd84d',8); txt('◉',LW-28,38,'#ffd84d');
-    setFont(7,'700',"'Share Tech Mono',monospace"); noGlow(); txt('SKIN',LW-28,58,'#b6ecff');
-    txt('MENU',LW-28,70,'#b6ecff');
+    setFont(7,'700',"'Share Tech Mono',monospace"); noGlow(); txt('UNLOCK',LW-28,58,'#b6ecff');
+    txt('ED',LW-28,70,'#b6ecff');
     ctx.restore();
     setFont(8,'700',"'Share Tech Mono',monospace"); noGlow();
     txt(`TODAY'S SPOTLIGHT • ${shopCountdownHour()}`,16,104,'#9feeff','left');
@@ -5123,6 +5123,7 @@ function drawCharShop(t) {
 
   if (isInv) {
     const invLabel=charShopInvFilter==='default'?'INVENTORY':(charShopInvFilter==='skins'?'SKINS':(charShopInvFilter==='auras'?'AURAS':'THEMES'));
+    setFont(7,'700',"'Share Tech Mono',monospace"); noGlow(); txt('UNLOCKED ITEMS',LW-16,104,'rgba(159,238,255,0.8)','right');
     BTNS.charInvFilter={x:10,y:10,w:132,h:24};
     drawNeonBtn(10,10,132,24,CFG.CY,`${invLabel} ▾`,8,1,0);
     BTNS.charInvOptDefault=BTNS.charInvOptSkins=BTNS.charInvOptAuras=BTNS.charInvOptThemes=null;
