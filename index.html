@@ -4502,10 +4502,13 @@ let jetpackCount=0, regenUsed=0;
 let pwrCounts={JETPACK:0,MAGNET:0,BOOST:0,SHIELD:0,SLOW:0,HEALTH_BOOST:0,MINI_JETPACK:0,NEW_STAGE:0,REGEN:0,X2_GEMS:0,GEM_DROP:0,BAD_LUCK:0};
 
 const MAX_LEVEL=100;
-function loadLevelXP(){ return Math.max(0,Number(localStorage.getItem('slope_level_xp')||'0')); }
-function saveLevelXP(v){ localStorage.setItem('slope_level_xp',String(Math.max(0,Math.floor(v||0)))); if (typeof queueCloudSync==='function') queueCloudSync(); }
-function loadClaimedLevelRewards(){ try{return JSON.parse(localStorage.getItem('slope_level_claimed')||'[]').map(Number);}catch{return[];} }
-function saveClaimedLevelRewards(v){ localStorage.setItem('slope_level_claimed',JSON.stringify(v||[])); if (typeof queueCloudSync==='function') queueCloudSync(); }
+let levelAccountScope='guest_local';
+function levelScopedKey(base){ return `${base}_${levelAccountScope}`; }
+function loadLevelXP(){ return Math.max(0,Number(localStorage.getItem(levelScopedKey('slope_level_xp'))||'0')); }
+function saveLevelXP(v){ localStorage.setItem(levelScopedKey('slope_level_xp'),String(Math.max(0,Math.floor(v||0)))); if (typeof queueCloudSync==='function') queueCloudSync(); }
+function loadClaimedLevelRewards(){ try{return JSON.parse(localStorage.getItem(levelScopedKey('slope_level_claimed'))||'[]').map(Number);}catch{return[];} }
+function saveClaimedLevelRewards(v){ localStorage.setItem(levelScopedKey('slope_level_claimed'),JSON.stringify(v||[])); if (typeof queueCloudSync==='function') queueCloudSync(); }
+function applyLevelScope(uid=''){ levelAccountScope=uid?`uid_${String(uid)}`:'guest_local'; levelXp=loadLevelXP(); claimedLevelRewards=loadClaimedLevelRewards(); }
 let levelXp=loadLevelXP();
 let claimedLevelRewards=loadClaimedLevelRewards();
 function xpRequiredForLevel(level){ const l=Math.max(1,Math.min(MAX_LEVEL,Number(level)||1)); return Math.floor(220 + (l-1)*95 + Math.pow(l-1,1.42)*26); }
@@ -5944,6 +5947,7 @@ function initFirebase(){
         isSignedIn=true;
         const keepVerified=(auth&&typeof auth.verified==='boolean')?auth.verified:!!u.emailVerified;
         auth={signedIn:true,name:u.displayName||auth.name||'Runner',email:u.email||'',uid:u.uid||'',verified:!!keepVerified,bio:profileBio||'',avatar:profileAvatar||'',admin:!!(auth&&auth.admin),status:String((auth&&auth.status)||'online'),statusPref:STATUS_COLORS[String((auth&&auth.statusPref)||'').toLowerCase()]?String(auth.statusPref).toLowerCase():'online'};
+        applyLevelScope(u.uid||'');
         saveAuth(auth);
         refreshAdminFlag();
         socialData={friends:[],followers:[],following:[],received:[],sent:[]};
@@ -5956,6 +5960,7 @@ function initFirebase(){
       } else {
         isSignedIn=false;
         auth={...AUTH_GUEST};
+        applyLevelScope('');
         profileBio=''; profileAvatar='';
         cloudProfileRoot=CLOUD_INFO_ROOT;
         cloudGemCount=loadBank();
@@ -6130,6 +6135,8 @@ function buildLocalProgressPayload(){
     selectedAura:selectedAura||'none',
     selectedTheme:selectedTheme||'classic',
     doneObjs:loadDoneObjs(),
+    levelXp:Math.floor(Math.max(0,Number(levelXp||0))),
+    claimedLevelRewards:(claimedLevelRewards||[]).map(Number),
     options:OPTION_PREFS,
     bestScore:bestScore||0,
     modeScores:modeScores||{endless:0,adventure:0,impossible:0,ltm:0},
@@ -6187,6 +6194,8 @@ async function loadCloudProfileAndProgress() {
       if (p.upgrades) { upgrades={...upgrades,...p.upgrades}; saveUpgrades(upgrades); }
       if (Array.isArray(p.unlocked)) { unlockedChars=p.unlocked.slice(); saveUnlocked(unlockedChars); }
       if (Array.isArray(p.doneObjs)) { doneObjs=p.doneObjs.slice(); saveDoneObjs(doneObjs); }
+      if (Number.isFinite(Number(p.levelXp))) { levelXp=Math.max(0,Math.floor(Number(p.levelXp))); saveLevelXP(levelXp); }
+      if (Array.isArray(p.claimedLevelRewards)) { claimedLevelRewards=p.claimedLevelRewards.map(Number).filter(Number.isFinite); saveClaimedLevelRewards(claimedLevelRewards); }
       if (Array.isArray(p.unlockedAuras)) { unlockedAuras=p.unlockedAuras.slice(); saveAuraUnlocks(unlockedAuras); }
       if (Array.isArray(p.unlockedThemes)) { unlockedThemes=p.unlockedThemes.slice(); saveThemeUnlocks(unlockedThemes); }
       if (p.selectedChar) { setSelectedChar(p.selectedChar); }
@@ -6924,7 +6933,7 @@ async function beginDeleteAccountFlow(){
         ]);
         await fbUser.delete();
         openActionPopup('DELETE ACCOUNT','Success. Your account has been officially removed.',true,false);
-        isSignedIn=false; auth={...AUTH_GUEST}; saveAuth(auth);
+        isSignedIn=false; auth={...AUTH_GUEST}; saveAuth(auth); applyLevelScope('');
         socialData={friends:[],followers:[],following:[],received:[],sent:[]};
         socialCounters={friends:0,followers:0,following:0,received:0,sent:0};
         rebuildSocialRelationCache();
@@ -6938,7 +6947,7 @@ async function beginDeleteAccountFlow(){
 
 function doSignOut(){
   if (fbReady && fbAuth) fbAuth.signOut();
-  isSignedIn=false; auth={...AUTH_GUEST}; saveAuth(auth);
+  isSignedIn=false; auth={...AUTH_GUEST}; saveAuth(auth); applyLevelScope('');
   cloudProfileRoot=CLOUD_INFO_ROOT;
   cloudGemCount=loadBank();
   cloudUpdatedAt=0;
