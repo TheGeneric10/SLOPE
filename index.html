@@ -2335,6 +2335,10 @@ function randPwrKey() {
     return pool[rndI(0,pool.length-1)];
   }
 
+  if (gameMode==='NEON_RUSH') {
+    return 'SICK';
+  }
+
   if (gameMode==='LTM') {
     const mode=getActiveLtm();
     const forced=(mode&&mode.forcedPowerups)||[];
