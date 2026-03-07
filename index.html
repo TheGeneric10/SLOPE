@@ -5635,6 +5635,7 @@ async function ensureSupportedVersions(){
   if (!fbReady || !fbDb) return;
   try {
     await fbDb.ref('SLOPE/config/currentVersion').set(VERSION);
+    await fbDb.ref('SLOPE/config/currentSeason').set('1');
     const sv=await fbDb.ref('SLOPE/config/supportedVersions').get();
     const list=(sv&&sv.val)?(sv.val()||[]):[];
     const merged=Array.from(new Set([...(Array.isArray(list)?list:[]), ...SUPPORTED_VERSIONS]));
