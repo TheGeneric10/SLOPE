@@ -5007,6 +5007,26 @@ function drawCharShop(t) {
   ctx.save(); ctx.strokeStyle='rgba(255,230,0,0.3)'; ctx.lineWidth=1;
   ctx.beginPath(); ctx.moveTo(40,90); ctx.lineTo(LW-40,90); ctx.stroke(); ctx.restore();
 
+  if (isInv) {
+    const invLabel=charShopInvFilter==='default'?'INVENTORY':(charShopInvFilter==='skins'?'SKINS':(charShopInvFilter==='auras'?'AURAS':'THEMES'));
+    BTNS.charInvFilter={x:10,y:10,w:132,h:24};
+    drawNeonBtn(10,10,132,24,CFG.CY,`${invLabel} ▾`,8,1,0);
+    BTNS.charInvOptDefault=BTNS.charInvOptSkins=BTNS.charInvOptAuras=BTNS.charInvOptThemes=null;
+    if (charShopFilterOpen) {
+      BTNS.charInvOptDefault={x:10,y:34,w:132,h:22};
+      BTNS.charInvOptSkins={x:10,y:56,w:132,h:22};
+      BTNS.charInvOptAuras={x:10,y:78,w:132,h:22};
+      BTNS.charInvOptThemes={x:10,y:100,w:132,h:22};
+      drawNeonBtn(10,34,132,22,charShopInvFilter==='default'?CFG.CY:'#4a5a67','INVENTORY',8,1,0);
+      drawNeonBtn(10,56,132,22,charShopInvFilter==='skins'?CFG.YL:'#5b5130','SKINS',8,1,0);
+      drawNeonBtn(10,78,132,22,charShopInvFilter==='auras'?CFG.GR:'#305142','AURAS',8,1,0);
+      drawNeonBtn(10,100,132,22,charShopInvFilter==='themes'?CFG.PU:'#4d325b','THEMES',8,1,0);
+    }
+  } else {
+    charShopFilterOpen=false;
+    BTNS.charInvFilter=BTNS.charInvOptDefault=BTNS.charInvOptSkins=BTNS.charInvOptAuras=BTNS.charInvOptThemes=null;
+  }
+
   charBtnRects.length=0;
   const cW=120,cH=104,gapX=7,gapY=10;
 
