@@ -1051,7 +1051,11 @@ function handleTap(e) {
   }
   if (gs === 'LEVELS') {
     if (hitBtn(p,BTNS.levelBack)) { SFX.click(); levelXpOpen=false; doTransition(levelsReturnState||'MENU'); levelsReturnState='MENU'; return; }
-    if (hitBtn(p,BTNS.levelClaim)) { SFX.click(); rewardLevel(currentLevel()); return; }
+    if (hitBtn(p,BTNS.levelClaim)) {
+      const nextTier=getNextClaimableTier();
+      if (nextTier!==null) { SFX.click(); rewardLevel(nextTier); }
+      return;
+    }
     if (hitBtn(p,BTNS.levelXpOpen)) { SFX.click(); levelXpOpen=!levelXpOpen; return; }
     if (levelXpOpen) { levelXpOpen=false; return; }
     return;
@@ -3949,7 +3953,7 @@ function drawLevelsScreen(t){
     ctx.restore();
   }
 
-  const tiers=[1,5,10,15,20,25,30,35,40,45,50,60,70,80,90,100];
+  const tiers=LEVEL_TIER_STEPS;
   const gx=26,gy=110,gw=76,gh=56,gap=8;
   tiers.forEach((lv,i)=>{
     const col=i%4,row=Math.floor(i/4);
@@ -3963,8 +3967,9 @@ function drawLevelsScreen(t){
     setFont(8,'700',"'Share Tech Mono',monospace"); noGlow();
     txt(claimed?'CLAIMED':(unlocked?'UNLOCKED':'LOCKED'),x+gw/2,y+38,claimed?'#39ff14':'#b7d9ea');
   });
+  const nextTier=getNextClaimableTier();
   BTNS.levelClaim={x:26,y:LH-84,w:144,h:30};
-  drawNeonBtn(BTNS.levelClaim.x,BTNS.levelClaim.y,BTNS.levelClaim.w,BTNS.levelClaim.h,'#ffd84d',`CLAIM LV ${currentLevel()}`,9,1,Math.sin(t*2));
+  drawNeonBtn(BTNS.levelClaim.x,BTNS.levelClaim.y,BTNS.levelClaim.w,BTNS.levelClaim.h,nextTier!==null?'#ffd84d':'#4a5a66',nextTier!==null?'CLAIM NEXT TIER':'NEXT TIER LOCKED',9,1,Math.sin(t*2));
   BTNS.levelBack={x:LW-170,y:LH-84,w:144,h:30};
   drawNeonBtn(BTNS.levelBack.x,BTNS.levelBack.y,BTNS.levelBack.w,BTNS.levelBack.h,CFG.PK,'← BACK',10,1,Math.sin(t*2));
   ctx.restore();
@@ -4522,6 +4527,14 @@ function totalXpForLevel(level){ let t=0; for (let i=1;i<level;i++) t+=xpRequire
 function levelFromXp(xp){ let lvl=1, cur=Math.max(0,Number(xp)||0); while (lvl<MAX_LEVEL){ const need=xpRequiredForLevel(lvl); if (cur<need) break; cur-=need; lvl++; } return lvl; }
 function currentLevel(){ return levelFromXp(levelXp); }
 function levelProgress(){ const lvl=currentLevel(); if (lvl>=MAX_LEVEL) return {lvl,cur:xpRequiredForLevel(MAX_LEVEL),need:xpRequiredForLevel(MAX_LEVEL),pct:1}; const base=totalXpForLevel(lvl); const cur=Math.max(0,levelXp-base); const need=xpRequiredForLevel(lvl); return {lvl,cur,need,pct:clamp(cur/Math.max(1,need),0,1)}; }
+const LEVEL_TIER_STEPS=[1,5,10,15,20,25,30,35,40,45,50,60,70,80,90,100];
+function getNextClaimableTier(){
+  const lvl=currentLevel();
+  for (const tier of LEVEL_TIER_STEPS) {
+    if (lvl>=tier && !claimedLevelRewards.includes(tier)) return tier;
+  }
+  return null;
+}
 
 const LEVEL_SPECIAL_REWARDS={
   1:{title:'Starter reward pack',skin:'default'},5:{title:'Rookie Glow title'},10:{skin:'arctic'},15:{aura:'static_ring'},20:{theme:'retrowave'},
