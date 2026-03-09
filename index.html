@@ -3487,9 +3487,10 @@ function drawModeSelect(t) {
   const showPreview=!!(isSignedIn && isAdminUser);
   const cardCount=3+(ltmVisible?1:0)+(showPreview?1:0);
   const totalCardW=cardW*cardCount+gap*(cardCount-1);
-  const startX=(LW-totalCardW)/2 + modeSelScrollX;
-  modeSelContentW=Math.max(LW,totalCardW+24);
+  const sidePad=24;
+  modeSelContentW=Math.max(LW,totalCardW+sidePad*2);
   modeSelScrollX=clamp(modeSelScrollX,Math.min(0,LW-modeSelContentW),0);
+  const startX=sidePad + modeSelScrollX;
 
   const cards=[
     {key:'modeEndless',col:CFG.CY,title:'ENDLESS',sub:'CLASSIC',icon:'∞',feats:['Classic run','No cap','Score chase'],btn:'PLAY'},
